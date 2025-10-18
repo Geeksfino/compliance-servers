@@ -14,6 +14,8 @@ import type {
   RunFinishedEvent,
   RunErrorEvent,
   TextMessageChunkEvent,
+  TextMessageStartEvent,
+  TextMessageEndEvent,
   ToolCallStartEvent,
   ToolCallArgsEvent,
   ToolCallEndEvent,
@@ -182,6 +184,7 @@ export class LLMAgent extends BaseAgent {
       // Stream the response
       const messageId = this.generateMessageId();
       let currentToolCall: { id: string; name: string; args: string } | null = null;
+      let textMessageStarted = false;
 
       for await (const chunk of this.parseSSEStream(response.body!)) {
         if (!chunk.choices?.[0]?.delta) continue;
@@ -190,6 +193,17 @@ export class LLMAgent extends BaseAgent {
 
         // Handle text content
         if (delta.content) {
+          // Send TEXT_MESSAGE_START before first chunk
+          if (!textMessageStarted) {
+            const startEvt: TextMessageStartEvent = {
+              type: EventType.TEXT_MESSAGE_START,
+              messageId,
+              role: 'assistant',
+            };
+            yield startEvt;
+            textMessageStarted = true;
+          }
+
           const chunkEvt: TextMessageChunkEvent = {
             type: EventType.TEXT_MESSAGE_CHUNK,
             messageId,
@@ -254,6 +268,15 @@ export class LLMAgent extends BaseAgent {
         yield endEvt;
       }
 
+      // Send TEXT_MESSAGE_END if we started a text message
+      if (textMessageStarted) {
+        const endEvt: TextMessageEndEvent = {
+          type: EventType.TEXT_MESSAGE_END,
+          messageId,
+        };
+        yield endEvt;
+      }
+
       // Finish run
       const finished: RunFinishedEvent = {
         type: EventType.RUN_FINISHED,
@@ -300,6 +323,20 @@ export class LLMAgent extends BaseAgent {
     messages: Message[],
     nameMap?: Map<string, string>
   ): ChatMessage[] {
+    const mapRole = (role: string): string => {
+      switch (role) {
+        case 'agent':
+          return 'assistant';
+        case 'client':
+          return 'user';
+        default:
+          return role;
+      }
+    };
+
+    const isSupportedRole = (role: string): boolean =>
+      role === 'system' || role === 'user' || role === 'assistant' || role === 'tool';
+
     return messages.map((msg, index) => {
       try {
         const content =
@@ -307,8 +344,16 @@ export class LLMAgent extends BaseAgent {
             ? ((msg as any).content as string)
             : '';
 
+        const mappedRole = mapRole(msg.role);
+        if (!isSupportedRole(mappedRole)) {
+          logger.warn(
+            { messageIndex: index, originalRole: msg.role, mappedRole },
+            'Unsupported role detected when converting message; defaulting to "user"'
+          );
+        }
+
         const chatMessage: ChatMessage = {
-          role: msg.role,
+          role: isSupportedRole(mappedRole) ? mappedRole : 'user',
           content,
         };
 
