@@ -409,6 +409,7 @@ export class LLMAgent extends BaseAgent {
       },
     ];
 
+    /*
     if (contextSummary.length > 0) {
       const summaryContent = ['Context summary:', ...contextSummary.map((line) => `- ${line}`)].join('\n');
       sequence.push({
@@ -416,7 +417,8 @@ export class LLMAgent extends BaseAgent {
         content: summaryContent,
       });
     }
-
+    */
+   
     const converted = this.convertMessages(messages, nameMap);
     sequence.push(...converted);
     return sequence;
