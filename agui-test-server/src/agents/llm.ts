@@ -22,6 +22,7 @@ import type {
 } from '@ag-ui/core';
 import { EventType } from '@ag-ui/core';
 import { fetch } from 'undici';
+import type { Response } from 'undici';
 import { logger } from '../utils/logger.js';
 
 interface LLMConfig {
@@ -29,6 +30,9 @@ interface LLMConfig {
   apiKey: string;
   model: string;
   temperature?: number;
+  maxRetries?: number;
+  retryDelayMs?: number;
+  timeoutMs?: number;
 }
 
 interface ToolConversionResult {
@@ -63,8 +67,61 @@ interface ChatCompletionChunk {
 const SYSTEM_PROMPT = 'You are a helpful assistant.';
 
 export class LLMAgent extends BaseAgent {
+  private readonly maxRetries: number;
+  private readonly retryDelayMs: number;
+  private readonly timeoutMs: number;
+
   constructor(private config: LLMConfig) {
     super();
+    this.maxRetries = config.maxRetries ?? 2;
+    this.retryDelayMs = config.retryDelayMs ?? 1000;
+    this.timeoutMs = config.timeoutMs ?? 30000;
+  }
+
+  /**
+   * Fetch with retry logic and timeout
+   */
+  private async fetchWithRetry(
+    url: string,
+    options: any
+  ): Promise<Response> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+
+        try {
+          const response = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+          return response;
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        
+        if (attempt < this.maxRetries) {
+          const delayMs = this.retryDelayMs * Math.pow(2, attempt);
+          logger.warn(
+            {
+              attempt: attempt + 1,
+              maxRetries: this.maxRetries,
+              delayMs,
+              error: lastError.message,
+            },
+            'Fetch failed, retrying with exponential backoff'
+          );
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+      }
+    }
+
+    throw lastError || new Error('Fetch failed after retries');
   }
 
   async *run(input: RunAgentInput): AsyncGenerator<BaseEvent> {
@@ -90,42 +147,47 @@ export class LLMAgent extends BaseAgent {
     yield started;
 
     try {
-      // Convert AG-UI tools to OpenAI format and build name mappings
-      const toolConversion = tools?.length
-        ? this.convertTools(tools)
-        : undefined;
-      const chatTools = toolConversion?.tools;
-
+      // Note: This is a demo server without real tool implementations.
+      // Tools are received from the client but not passed to the LLM.
+      // In a production system, tools would be:
+      // 1. Looked up in a tool registry
+      // 2. Converted to proper JSON Schema format
+      // 3. Passed to the LLM for parameter inference
+      // 4. Executed via MCP or other mechanism
+      // 5. Results fed back to the LLM
+      
+      // For now, we include tool info in the context summary for awareness
       const contextSummary = this.getContextSummaryLines(context);
+      
+      // Add available tools to context summary (informational only)
+      if (tools?.length) {
+        contextSummary.push(`Available tools: ${tools.map(t => t.name).join(', ')}`);
+        logger.debug(
+          { 
+            threadId, 
+            runId, 
+            toolCount: tools.length,
+            toolNames: tools.map(t => t.name),
+          },
+          'Tools available (not passed to LLM in demo mode)'
+        );
+      }
 
       // Build full chat message sequence including system prompt and context summary
       const chatMessages = this.buildChatMessages(
         messages,
         contextSummary,
-        toolConversion?.originalToSanitized
+        undefined // No tool name sanitization needed
       );
       logger.debug(
         { threadId, runId, messageCount: chatMessages.length },
         'Converted messages to OpenAI format'
       );
 
-      if (chatTools) {
-        logger.debug(
-          { 
-            threadId, 
-            runId, 
-            toolCount: chatTools.length,
-            toolNames: chatTools.map(t => t.function.name),
-          },
-          'Converted tools to OpenAI format'
-        );
-      }
-
-      // Call LLM API
+      // Call LLM API (without tools - demo mode)
       const requestBody = {
         model: this.config.model,
         messages: chatMessages,
-        tools: chatTools,
         stream: true,
         temperature: this.config.temperature ?? 0.7,
       };
@@ -136,7 +198,7 @@ export class LLMAgent extends BaseAgent {
         chatMessages,
         context,
         contextSummary,
-        toolConversion
+        undefined // No tool conversion in demo mode
       );
 
       logger.debug(
@@ -145,18 +207,23 @@ export class LLMAgent extends BaseAgent {
           runId,
           endpoint: this.config.endpoint,
           requestBody: JSON.stringify(requestBody),
+          maxRetries: this.maxRetries,
+          timeoutMs: this.timeoutMs,
         },
         'Sending request to LLM API'
       );
 
-      const response = await fetch(`${this.config.endpoint}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.config.apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
+      const response = await this.fetchWithRetry(
+        `${this.config.endpoint}/chat/completions`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.config.apiKey}`,
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
 
       if (!response.ok) {
         const errorBody = await response.text().catch(() => 'Unable to read error body');
@@ -228,8 +295,8 @@ export class LLMAgent extends BaseAgent {
             }
 
             const sanitizedName = toolCall.function?.name || '';
-            const originalName =
-              toolConversion?.sanitizedToOriginal.get(sanitizedName) ?? sanitizedName;
+            // In demo mode, no tool name sanitization
+            const originalName = sanitizedName;
 
             currentToolCall = {
               id: toolCall.id,

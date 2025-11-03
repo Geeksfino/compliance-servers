@@ -40,6 +40,9 @@ export async function createAgent(
       endpoint: config.litellmEndpoint,
       apiKey: config.litellmApiKey,
       model: providerOverride || config.litellmModel || 'deepseek-chat',
+      maxRetries: 2,
+      retryDelayMs: 1000,
+      timeoutMs: 30000,
     });
   };
 
@@ -52,6 +55,9 @@ export async function createAgent(
       endpoint: 'https://api.deepseek.com/v1',
       apiKey: config.deepseekApiKey,
       model: config.deepseekModel || 'deepseek-chat',
+      maxRetries: 2,
+      retryDelayMs: 1000,
+      timeoutMs: 30000,
     });
   };
 

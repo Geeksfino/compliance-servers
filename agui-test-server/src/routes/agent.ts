@@ -22,12 +22,15 @@ export const agentRoute: FastifyPluginAsync = async (fastify) => {
       validateRunAgentInput(request.body);
       const input = request.body as RunAgentInput;
 
+      // Count tools from the proper tools array (AG-UI compliant)
+      const toolsCount = input.tools?.length || 0;
+
       logger.info(
         {
           threadId: input.threadId,
           runId: input.runId,
           messageCount: input.messages.length,
-          toolCount: input.tools?.length || 0,
+          toolCount: toolsCount,
         },
         'Received agent request'
       );
