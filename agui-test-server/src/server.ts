@@ -8,9 +8,11 @@ import cors from '@fastify/cors';
 import { loadConfig } from './utils/config.js';
 import { logger, loggerOptions } from './utils/logger.js';
 import { agentRoute } from './routes/agent.js';
+import { eventsRoute } from './routes/events.js';
 import { healthRoute } from './routes/health.js';
 import { scenariosRoute } from './routes/scenarios.js';
 import { sessionManager } from './streaming/session.js';
+import { sseConnectionManager } from './streaming/connection.js';
 
 const config = loadConfig();
 
@@ -30,6 +32,7 @@ await fastify.register(cors, {
 
 // Register routes
 await fastify.register(healthRoute);
+await fastify.register(eventsRoute);
 await fastify.register(agentRoute);
 await fastify.register(scenariosRoute);
 
@@ -42,6 +45,7 @@ fastify.get('/', async (_request, _reply) => {
     defaultScenario: config.defaultScenario,
     endpoints: {
       health: 'GET /health',
+      events: 'GET /events?sessionId=<uuid>',
       agent: 'POST /agent',
       scenarios: {
         list: 'GET /scenarios',
@@ -56,6 +60,7 @@ fastify.get('/', async (_request, _reply) => {
 // Session cleanup interval (every 10 minutes)
 setInterval(() => {
   sessionManager.cleanup(3600000); // 1 hour max age
+  sseConnectionManager.cleanup(300000); // 5 minutes max age for SSE connections
 }, 600000);
 
 // Graceful shutdown

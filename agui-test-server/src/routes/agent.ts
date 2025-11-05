@@ -7,6 +7,8 @@ import type { RunAgentInput } from '@ag-ui/core';
 import { validateRunAgentInput } from '../utils/validation.js';
 import { SSEEncoder, streamEvents } from '../streaming/encoder.js';
 import { sessionManager } from '../streaming/session.js';
+import { sseConnectionManager } from '../streaming/connection.js';
+import { eventQueue } from '../streaming/event-queue.js';
 import { createAgent } from './agent-factory';
 import { logger } from '../utils/logger.js';
 import { loadConfig } from '../utils/config.js';
@@ -39,41 +41,95 @@ export const agentRoute: FastifyPluginAsync = async (fastify) => {
       sessionManager.getOrCreate(input.threadId);
       sessionManager.updateMessages(input.threadId, input.messages);
 
-      // Create encoder
-      const acceptHeader = request.headers.accept;
-      const encoder = new SSEEncoder(acceptHeader);
+      // Check if this is eventStream mode (has active SSE connection)
+      // threadId equals sessionId.uuidString in NeuronKit
+      const hasSSEConnection = sseConnectionManager.hasConnection(input.threadId);
 
-      // Set SSE headers
-      reply.raw.writeHead(200, {
-        'Content-Type': encoder.getContentType(),
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-        'X-Accel-Buffering': 'no',
-      });
+      if (hasSSEConnection) {
+        // EventStream mode: Route events to existing SSE connection
+        logger.info(
+          {
+            threadId: input.threadId,
+            runId: input.runId,
+          },
+          'Routing events to SSE connection (eventStream mode)'
+        );
 
-      // Send retry directive
-      reply.raw.write(SSEEncoder.retry(config.sseRetryMs));
+        // Create and run agent
+        const agent = await createAgent(config, input);
+        const events = agent.run(input);
 
-      // Create and run agent
-      const agent = await createAgent(config, input);
-      const events = agent.run(input);
+        // Send events to SSE connection
+        let eventCount = 0;
+        for await (const event of events) {
+          const sent = sseConnectionManager.sendEvent(input.threadId, event);
+          if (sent) {
+            eventCount++;
+          } else {
+            // Connection lost, queue event
+            eventQueue.enqueue(input.threadId, event);
+          }
+        }
 
-      // Stream events
-      for await (const chunk of streamEvents(events, encoder)) {
-        reply.raw.write(chunk);
+        const duration = Date.now() - startTime;
+        logger.info(
+          {
+            threadId: input.threadId,
+            runId: input.runId,
+            duration,
+            eventCount,
+          },
+          'Completed agent request (routed to SSE)'
+        );
+
+        // Return 200 OK immediately (events sent via SSE)
+        reply.status(200).send({ status: 'ok', eventsSent: eventCount });
+      } else {
+        // PostStream mode: Stream events via POST response
+        logger.info(
+          {
+            threadId: input.threadId,
+            runId: input.runId,
+          },
+          'Streaming events via POST response (postStream mode)'
+        );
+
+        // Create encoder
+        const acceptHeader = request.headers.accept;
+        const encoder = new SSEEncoder(acceptHeader);
+
+        // Set SSE headers
+        reply.raw.writeHead(200, {
+          'Content-Type': encoder.getContentType(),
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+          'X-Accel-Buffering': 'no',
+        });
+
+        // Send retry directive
+        reply.raw.write(SSEEncoder.retry(config.sseRetryMs));
+
+        // Create and run agent
+        const agent = await createAgent(config, input);
+        const events = agent.run(input);
+
+        // Stream events
+        for await (const chunk of streamEvents(events, encoder)) {
+          reply.raw.write(chunk);
+        }
+
+        const duration = Date.now() - startTime;
+        logger.info(
+          {
+            threadId: input.threadId,
+            runId: input.runId,
+            duration,
+          },
+          'Completed agent request (streamed via POST)'
+        );
+
+        reply.raw.end();
       }
-
-      const duration = Date.now() - startTime;
-      logger.info(
-        {
-          threadId: input.threadId,
-          runId: input.runId,
-          duration,
-        },
-        'Completed agent request'
-      );
-
-      reply.raw.end();
     } catch (error) {
       const duration = Date.now() - startTime;
       
