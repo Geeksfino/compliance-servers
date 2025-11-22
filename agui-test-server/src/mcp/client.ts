@@ -1,15 +1,23 @@
 /**
  * MCP Client for calling MCP-UI servers
+ * Supports both stdio (for local/development) and HTTP (for cloud/production) transports
  */
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { HTTPClientTransport } from './http-transport.js';
 import { logger } from '../utils/logger.js';
 
 export interface MCPClientConfig {
-  command: string;
+  // For stdio transport (local/development)
+  command?: string;
   args?: string[];
   env?: Record<string, string>;
+  
+  // For HTTP transport (cloud/production)
+  url?: string;
+  headers?: Record<string, string>;
+  timeout?: number;
 }
 
 export interface MCPToolCallResult {
@@ -45,11 +53,31 @@ export class MCPClientManager {
     }
 
     try {
-      const transport = new StdioClientTransport({
-        command: config.command,
-        args: config.args,
-        env: config.env,
-      });
+      let transport;
+      let transportType: string;
+      
+      // Determine which transport to use based on configuration
+      if (config.url) {
+        // Use HTTP transport for cloud/network communication
+        transportType = 'http';
+        transport = new HTTPClientTransport({
+          url: config.url,
+          headers: config.headers,
+          timeout: config.timeout,
+        });
+        logger.info({ serverId, url: config.url }, 'Using HTTP transport for MCP connection');
+      } else if (config.command) {
+        // Use stdio transport for local/process communication
+        transportType = 'stdio';
+        transport = new StdioClientTransport({
+          command: config.command,
+          args: config.args,
+          env: config.env,
+        });
+        logger.info({ serverId, command: config.command }, 'Using stdio transport for MCP connection');
+      } else {
+        throw new Error('MCP client config must provide either url (for HTTP transport) or command (for stdio transport)');
+      }
 
       const client = new Client(
         {
@@ -64,7 +92,7 @@ export class MCPClientManager {
       await client.connect(transport);
       this.clients.set(serverId, client);
 
-      logger.info({ serverId, command: config.command }, 'Connected to MCP server');
+      logger.info({ serverId, transport: transportType }, 'Connected to MCP server');
     } catch (error) {
       logger.error(
         {

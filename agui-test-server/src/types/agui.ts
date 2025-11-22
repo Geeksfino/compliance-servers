@@ -60,6 +60,9 @@ export interface ServerConfig {
   litellmApiKey?: string;
   deepseekApiKey?: string;
   deepseekModel?: string;
+  // MCP configuration - supports both HTTP and stdio transports
+  mcpTransport?: 'http' | 'stdio';
+  mcpServerUrl?: string;
   mcpServerCommand?: string;
   mcpServerArgs?: string[];
 }
