@@ -13,6 +13,7 @@ import { healthRoute } from './routes/health.js';
 import { scenariosRoute } from './routes/scenarios.js';
 import { sessionManager } from './streaming/session.js';
 import { sseConnectionManager } from './streaming/connection.js';
+import { mcpClientManager, type MCPClientConfig } from './mcp/client.js';
 
 const config = loadConfig();
 
@@ -66,12 +67,44 @@ setInterval(() => {
 // Graceful shutdown
 const shutdown = async () => {
   logger.info('Shutting down server...');
+  await mcpClientManager.disconnectAll();
   await fastify.close();
   process.exit(0);
 };
 
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
+
+// Initialize MCP client if configured
+if (config.mcpServerUrl || config.mcpServerCommand) {
+  try {
+    let mcpConfig: MCPClientConfig;
+    
+    // Prefer HTTP transport if URL is configured
+    if (config.mcpServerUrl) {
+      mcpConfig = { url: config.mcpServerUrl };
+      logger.info({ url: config.mcpServerUrl }, 'Initializing MCP client with HTTP transport');
+    } else if (config.mcpServerCommand) {
+      mcpConfig = { 
+        command: config.mcpServerCommand,
+        args: config.mcpServerArgs 
+      };
+      logger.info({ command: config.mcpServerCommand }, 'Initializing MCP client with stdio transport');
+    } else {
+      throw new Error('Invalid MCP configuration');
+    }
+    
+    await mcpClientManager.connect('mcpui-server', mcpConfig);
+    logger.info('MCP client initialized successfully');
+  } catch (error) {
+    logger.warn(
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      'Failed to initialize MCP client, continuing without MCP support'
+    );
+  }
+}
 
 // Start server
 try {

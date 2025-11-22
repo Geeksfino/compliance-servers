@@ -9,6 +9,7 @@ A production-grade AG-UI protocol test server for NeuronKit SDK integration test
 - 📡 **SSE Streaming** - Server-Sent Events with proper event encoding
 - 🧪 **Test Scenarios** - Pre-built scenarios for deterministic testing
 - 🔌 **LiteLLM Integration** - Provider-agnostic LLM access
+- 🔗 **MCP Integration** - Call MCP servers and stream UI resources
 - 🚀 **High Performance** - Built on Fastify for maximum throughput
 - 📊 **Session Management** - Track conversations across multiple turns
 - 🔍 **Structured Logging** - Pino-based logging with pretty output
@@ -212,6 +213,96 @@ Direct DeepSeek API integration.
 DEFAULT_AGENT=deepseek
 DEEPSEEK_API_KEY=your-deepseek-key
 DEEPSEEK_MODEL=deepseek-chat
+```
+
+## MCP Integration
+
+The AG-UI test server can integrate with MCP (Model Context Protocol) servers to execute tools and stream UI resources back to clients.
+
+### Overview
+
+When configured with an MCP server:
+1. LLM agent detects tool calls from the LLM
+2. Executes tools via MCP server connection
+3. Streams results back as AG-UI events:
+   - `TOOL_CALL_RESULT` - Text content from tool execution
+   - `CUSTOM` events - MCP UI resources (HTML, URLs, Remote DOM)
+
+### Configuration
+
+Set environment variables to enable MCP integration:
+
+```env
+# Enable LLM mode
+AGENT_MODE=llm
+
+# Configure MCP server (stdio transport)
+MCP_SERVER_COMMAND=node
+MCP_SERVER_ARGS=../mcpui-test-server/dist/server.js
+```
+
+### Example: Calling MCP-UI Tools
+
+```bash
+# Build both servers
+cd mcpui-test-server && npm run build
+cd ../agui-test-server && npm run build
+
+# Configure .env
+cat > .env << EOF
+AGENT_MODE=llm
+LITELLM_ENDPOINT=http://localhost:4000/v1
+LITELLM_API_KEY=your-key
+MCP_SERVER_COMMAND=node
+MCP_SERVER_ARGS=../mcpui-test-server/dist/server.js
+EOF
+
+# Start LiteLLM proxy (separate terminal)
+litellm --model deepseek/deepseek-chat --api_key $DEEPSEEK_API_KEY
+
+# Start AG-UI server
+npm start
+
+# Make request
+curl -X POST http://localhost:3000/agent \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{
+    "threadId": "test-123",
+    "runId": "run_1",
+    "messages": [{"id":"1","role":"user","content":"Show me a simple HTML page"}]
+  }'
+```
+
+### Event Flow
+
+```
+RUN_STARTED
+  ↓
+TOOL_CALL_START (toolCallName: "showSimpleHtml")
+  ↓
+TOOL_CALL_ARGS (arguments JSON)
+  ↓
+TOOL_CALL_END
+  ↓
+TOOL_CALL_RESULT (text content)
+  ↓
+CUSTOM (name: "mcp-ui-resource", value: { type: "resource", resource: {...} })
+  ↓
+RUN_FINISHED
+```
+
+### Handling UI Resources in Clients
+
+```typescript
+// Example client-side handling
+for await (const event of stream) {
+  if (event.type === 'CUSTOM' && event.name === 'mcp-ui-resource') {
+    const uiResource = event.value;
+    // Render UI resource
+    renderUIResource(uiResource);
+  }
+}
 ```
 
 ## Testing with NeuronKit

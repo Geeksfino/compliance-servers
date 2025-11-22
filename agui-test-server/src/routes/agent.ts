@@ -9,7 +9,7 @@ import { SSEEncoder, streamEvents } from '../streaming/encoder.js';
 import { sessionManager } from '../streaming/session.js';
 import { sseConnectionManager } from '../streaming/connection.js';
 import { eventQueue } from '../streaming/event-queue.js';
-import { createAgent } from './agent-factory';
+import { createAgent } from './agent-factory.js';
 import { logger } from '../utils/logger.js';
 import { loadConfig } from '../utils/config.js';
 

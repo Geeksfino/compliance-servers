@@ -43,6 +43,7 @@ export async function createAgent(
       maxRetries: 2,
       retryDelayMs: 1000,
       timeoutMs: 30000,
+      mcpServerId: 'mcpui-server',
     });
   };
 
@@ -58,6 +59,7 @@ export async function createAgent(
       maxRetries: 2,
       retryDelayMs: 1000,
       timeoutMs: 30000,
+      mcpServerId: 'mcpui-server',
     });
   };
 
