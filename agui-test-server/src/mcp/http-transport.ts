@@ -55,6 +55,7 @@ export class HTTPClientTransport implements Transport {
   async send(message: JSONRPCMessage): Promise<void> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream',
       ...this.headers,
     };
 
@@ -107,7 +108,33 @@ export class HTTPClientTransport implements Transport {
         throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
       }
 
-      const responseData = await response.json();
+      // Handle SSE response format from StreamableHTTPServerTransport
+      const contentType = response.headers.get('content-type') || '';
+      let responseData: any;
+      
+      if (contentType.includes('text/event-stream')) {
+        // Parse SSE format: "event: message\ndata: {json}\n\n"
+        const text = await response.text();
+        const dataMatch = text.match(/data:\s*({.*})/);
+        if (dataMatch) {
+          responseData = JSON.parse(dataMatch[1]);
+        } else if (text.trim() === '') {
+          // Empty response for notifications (no response expected)
+          logger.debug({ method }, 'Notification sent (no response expected)');
+          return;
+        } else {
+          throw new Error('Failed to parse SSE response');
+        }
+      } else {
+        // Standard JSON response
+        const text = await response.text();
+        if (text.trim() === '') {
+          // Empty response for notifications
+          logger.debug({ method }, 'Notification sent (no response expected)');
+          return;
+        }
+        responseData = JSON.parse(text);
+      }
       
       // Safe type check for result
       const hasResult = typeof responseData === 'object' && responseData !== null && 'result' in responseData;
