@@ -7,8 +7,15 @@
  */
 
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
+import { JSONRPCMessage, JSONRPCRequest } from '@modelcontextprotocol/sdk/types.js';
 import { logger } from '../utils/logger.js';
+
+/**
+ * Type guard to check if a message is a request (has 'method' field)
+ */
+function isJSONRPCRequest(message: JSONRPCMessage): message is JSONRPCRequest {
+  return 'method' in message;
+}
 
 export interface HTTPClientTransportConfig {
   /** Base URL of the MCP server (e.g., http://localhost:3100/mcp) */
@@ -73,8 +80,8 @@ export class HTTPClientTransport implements Transport {
     }, this.timeout);
 
     try {
-      // Type guard to get method and id
-      const method = 'method' in message ? message.method : undefined;
+      // Use type guard for better type safety
+      const method = isJSONRPCRequest(message) ? message.method : undefined;
       const id = 'id' in message ? message.id : undefined;
       
       logger.debug(
@@ -114,16 +121,25 @@ export class HTTPClientTransport implements Transport {
       
       if (contentType.includes('text/event-stream')) {
         // Parse SSE format: "event: message\ndata: {json}\n\n"
+        // More robust parsing that handles multi-line JSON
         const text = await response.text();
-        const dataMatch = text.match(/data:\s*({.*})/);
-        if (dataMatch) {
-          responseData = JSON.parse(dataMatch[1]);
+        
+        // Extract all data lines from SSE format
+        const dataLines = text
+          .split('\n')
+          .filter(line => line.startsWith('data: '))
+          .map(line => line.substring(6)); // Remove 'data: ' prefix
+        
+        if (dataLines.length > 0) {
+          // Join multiple data lines and parse JSON
+          const jsonString = dataLines.join('\n');
+          responseData = JSON.parse(jsonString);
         } else if (text.trim() === '') {
           // Empty response for notifications (no response expected)
           logger.debug({ method }, 'Notification sent (no response expected)');
           return;
         } else {
-          throw new Error('Failed to parse SSE response');
+          throw new Error('Failed to parse SSE response: no data lines found');
         }
       } else {
         // Standard JSON response
@@ -155,7 +171,7 @@ export class HTTPClientTransport implements Transport {
     } catch (error) {
       clearTimeout(timeoutId);
       
-      const method = 'method' in message ? message.method : undefined;
+      const method = isJSONRPCRequest(message) ? message.method : undefined;
       
       logger.error(
         {

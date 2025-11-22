@@ -76,7 +76,7 @@ export class MCPClientManager {
         });
         logger.info({ serverId, command: config.command }, 'Using stdio transport for MCP connection');
       } else {
-        throw new Error('MCP client config must provide either url (HTTP) or command (stdio)');
+        throw new Error('MCP client config must provide either url (for HTTP transport) or command (for stdio transport)');
       }
 
       const client = new Client(
