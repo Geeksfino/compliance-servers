@@ -191,9 +191,12 @@ export class LLMAgent extends BaseAgent {
       }
       
       // Use tools from request if provided, otherwise use MCP tools
-      const toolsToUse = tools && tools.length > 0 ? tools : [];
-      const llmTools = toolsToUse.length > 0
-        ? toolsToUse.map(tool => ({
+      // CRITICAL: Distinguish between "not provided" (undefined) and "explicitly empty" ([])
+      // - tools === undefined/null -> use mcpTools (default behavior)
+      // - tools === [] -> use empty array (explicitly disable tools)
+      // - tools === [...] -> use provided tools
+      const llmTools = tools !== undefined && tools !== null
+        ? tools.map(tool => ({
             type: 'function' as const,
             function: {
               name: tool.name,
@@ -211,7 +214,7 @@ export class LLMAgent extends BaseAgent {
             runId,
             toolCount: llmTools.length,
             toolNames: llmTools.map(t => t.function.name),
-            source: toolsToUse.length > 0 ? 'request' : 'mcp',
+            source: tools !== undefined && tools !== null ? 'request' : 'mcp',
           },
           'Tools available for LLM'
         );
