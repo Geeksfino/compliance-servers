@@ -783,6 +783,51 @@ export class LLMAgent extends BaseAgent {
           const toolMsg = msg as ToolMessage;
           if (toolMsg.toolCallId) {
             chatMessage.tool_call_id = toolMsg.toolCallId;
+          } else {
+            // CRITICAL FIX: Tool messages require tool_call_id for LLM API
+            // If missing, try to infer from previous assistant message's tool_calls
+            let inferredToolCallId: string | undefined;
+            
+            // Look backwards for the most recent assistant message with tool_calls
+            for (let i = index - 1; i >= 0; i--) {
+              const prevMsg = messages[i];
+              const prevMappedRole = mapRole(prevMsg.role);
+              
+              if (prevMappedRole === 'assistant') {
+                const prevAssistantMsg = prevMsg as AssistantMessage;
+                if (prevAssistantMsg.toolCalls && prevAssistantMsg.toolCalls.length > 0) {
+                  // If there's only one tool call, use its ID
+                  // Otherwise, we can't reliably match, so use the first one as fallback
+                  inferredToolCallId = prevAssistantMsg.toolCalls[0].id;
+                  break;
+                }
+              }
+              // Stop looking if we hit a user message (tool results belong to the most recent assistant)
+              if (prevMappedRole === 'user') {
+                break;
+              }
+            }
+            
+            if (inferredToolCallId) {
+              chatMessage.tool_call_id = inferredToolCallId;
+              logger.warn(
+                {
+                  messageIndex: index,
+                  inferredToolCallId,
+                },
+                'Tool message missing toolCallId - inferred from previous assistant message'
+              );
+            } else {
+              logger.error(
+                {
+                  messageIndex: index,
+                  messageContent: content.substring(0, 100),
+                },
+                'Tool message missing toolCallId and cannot infer from context - skipping to prevent LLM API error'
+              );
+              // Return a marker object that we'll filter out
+              return { _skip: true } as any;
+            }
           }
         }
 
@@ -798,6 +843,9 @@ export class LLMAgent extends BaseAgent {
         );
         throw error;
       }
+    }).filter((msg): msg is ChatMessage => {
+      // Filter out skipped messages
+      return msg && !('_skip' in msg);
     });
   }
 
