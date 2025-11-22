@@ -76,12 +76,21 @@ process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
 
 // Initialize MCP client if configured
-if (config.mcpServerCommand) {
+if (config.mcpServerUrl || config.mcpServerCommand) {
   try {
-    await mcpClientManager.connect('mcpui-server', {
-      command: config.mcpServerCommand,
-      args: config.mcpServerArgs,
-    });
+    const mcpConfig: any = {};
+    
+    // Prefer HTTP transport if URL is configured
+    if (config.mcpServerUrl) {
+      mcpConfig.url = config.mcpServerUrl;
+      logger.info({ url: config.mcpServerUrl }, 'Initializing MCP client with HTTP transport');
+    } else if (config.mcpServerCommand) {
+      mcpConfig.command = config.mcpServerCommand;
+      mcpConfig.args = config.mcpServerArgs;
+      logger.info({ command: config.mcpServerCommand }, 'Initializing MCP client with stdio transport');
+    }
+    
+    await mcpClientManager.connect('mcpui-server', mcpConfig);
     logger.info('MCP client initialized successfully');
   } catch (error) {
     logger.warn(

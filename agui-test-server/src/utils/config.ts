@@ -48,6 +48,9 @@ export function loadConfig(): ServerConfig {
     litellmApiKey: process.env.LITELLM_API_KEY,
     deepseekApiKey: process.env.DEEPSEEK_API_KEY,
     deepseekModel: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
+    // MCP configuration - supports both HTTP and stdio transports
+    mcpTransport: process.env.MCP_TRANSPORT as 'http' | 'stdio' | undefined,
+    mcpServerUrl: process.env.MCP_SERVER_URL,
     mcpServerCommand: process.env.MCP_SERVER_COMMAND,
     mcpServerArgs: process.env.MCP_SERVER_ARGS?.split(',').map(arg => arg.trim()),
   };
