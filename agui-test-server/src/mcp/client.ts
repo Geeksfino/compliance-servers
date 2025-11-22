@@ -12,6 +12,26 @@ export interface MCPClientConfig {
   env?: Record<string, string>;
 }
 
+export interface MCPToolCallResult {
+  content?: Array<{
+    type: string;
+    text?: string;
+    data?: string;
+    mimeType?: string;
+    resource?: any;
+    [key: string]: unknown;
+  }>;
+  isError?: boolean;
+  _meta?: Record<string, unknown>;
+}
+
+export interface MCPTool {
+  name: string;
+  description?: string;
+  inputSchema?: any;
+  [key: string]: unknown;
+}
+
 export class MCPClientManager {
   private clients: Map<string, Client> = new Map();
 
@@ -64,7 +84,7 @@ export class MCPClientManager {
     serverId: string,
     toolName: string,
     args: Record<string, unknown>
-  ): Promise<any> {
+  ): Promise<MCPToolCallResult> {
     const client = this.clients.get(serverId);
     if (!client) {
       throw new Error(`MCP client not connected: ${serverId}`);
@@ -90,7 +110,7 @@ export class MCPClientManager {
         'MCP tool call completed'
       );
 
-      return result;
+      return result as MCPToolCallResult;
     } catch (error) {
       logger.error(
         {
@@ -107,7 +127,7 @@ export class MCPClientManager {
   /**
    * List available tools from an MCP server
    */
-  async listTools(serverId: string): Promise<any[]> {
+  async listTools(serverId: string): Promise<MCPTool[]> {
     const client = this.clients.get(serverId);
     if (!client) {
       throw new Error(`MCP client not connected: ${serverId}`);
@@ -115,7 +135,7 @@ export class MCPClientManager {
 
     try {
       const result = await client.listTools();
-      return result.tools || [];
+      return (result.tools || []) as MCPTool[];
     } catch (error) {
       logger.error(
         {

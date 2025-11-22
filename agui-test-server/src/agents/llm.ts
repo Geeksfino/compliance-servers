@@ -179,7 +179,6 @@ export class LLMAgent extends BaseAgent {
       // Build full chat message sequence including system prompt and context summary
       const chatMessages = this.buildChatMessages(
         messages,
-        contextSummary,
         undefined // No tool name sanitization needed
       );
       logger.debug(
@@ -200,7 +199,6 @@ export class LLMAgent extends BaseAgent {
         runId,
         chatMessages,
         context,
-        contextSummary,
         undefined // No tool conversion in demo mode
       );
 
@@ -563,7 +561,6 @@ export class LLMAgent extends BaseAgent {
 
   private buildChatMessages(
     messages: Message[],
-    _contextSummary: string[],
     nameMap?: Map<string, string>
   ): ChatMessage[] {
     const sequence: ChatMessage[] = [
@@ -588,9 +585,8 @@ export class LLMAgent extends BaseAgent {
     return sequence;
   }
 
-  // Kept for future use when tools need to be passed to LLM
-  // private _convertTools(tools: Tool[]): ToolConversionResult { ... }
-  // private _sanitizeToolName(name: string, usedNames: Set<string>): string { ... }
+  // Note: Tool conversion methods removed as tools are not passed to LLM in demo mode
+  // When needed in the future, implement proper tool handling with MCP integration
 
 
   private getContextSummaryLines(context: RunAgentInput['context']): string[] {
@@ -636,7 +632,6 @@ export class LLMAgent extends BaseAgent {
     runId: string,
     messages: ChatMessage[],
     context: RunAgentInput['context'],
-    _contextSummary: string[],
     toolConversion?: ToolConversionResult
   ): void {
     const previewLimit = 200;
