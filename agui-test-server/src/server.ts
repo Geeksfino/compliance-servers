@@ -13,6 +13,7 @@ import { healthRoute } from './routes/health.js';
 import { scenariosRoute } from './routes/scenarios.js';
 import { sessionManager } from './streaming/session.js';
 import { sseConnectionManager } from './streaming/connection.js';
+import { mcpClientManager } from './mcp/client.js';
 
 const config = loadConfig();
 
@@ -66,12 +67,31 @@ setInterval(() => {
 // Graceful shutdown
 const shutdown = async () => {
   logger.info('Shutting down server...');
+  await mcpClientManager.disconnectAll();
   await fastify.close();
   process.exit(0);
 };
 
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
+
+// Initialize MCP client if configured
+if (config.mcpServerCommand) {
+  try {
+    await mcpClientManager.connect('mcpui-server', {
+      command: config.mcpServerCommand,
+      args: config.mcpServerArgs,
+    });
+    logger.info('MCP client initialized successfully');
+  } catch (error) {
+    logger.warn(
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      'Failed to initialize MCP client, continuing without MCP support'
+    );
+  }
+}
 
 // Start server
 try {

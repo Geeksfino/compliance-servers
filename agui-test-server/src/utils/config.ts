@@ -48,5 +48,7 @@ export function loadConfig(): ServerConfig {
     litellmApiKey: process.env.LITELLM_API_KEY,
     deepseekApiKey: process.env.DEEPSEEK_API_KEY,
     deepseekModel: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
+    mcpServerCommand: process.env.MCP_SERVER_COMMAND,
+    mcpServerArgs: process.env.MCP_SERVER_ARGS?.split(',').map(arg => arg.trim()),
   };
 }

@@ -26,6 +26,7 @@
     "@ag-ui/core": "^0.0.39",
     "@ag-ui/encoder": "^0.0.39",
     "@fastify/cors": "^10.0.1",
+    "@modelcontextprotocol/sdk": "^1.22.0",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.0",
     "pino": "^9.6.0",

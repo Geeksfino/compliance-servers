@@ -7,7 +7,6 @@ import type {
   RunAgentInput,
   BaseEvent,
   Message,
-  Tool,
   AssistantMessage,
   ToolMessage,
   RunStartedEvent,
@@ -19,11 +18,14 @@ import type {
   ToolCallStartEvent,
   ToolCallArgsEvent,
   ToolCallEndEvent,
+  ToolCallResultEvent,
+  CustomEvent,
 } from '@ag-ui/core';
 import { EventType } from '@ag-ui/core';
 import { fetch } from 'undici';
 import type { Response } from 'undici';
 import { logger } from '../utils/logger.js';
+import { mcpClientManager } from '../mcp/client.js';
 
 interface LLMConfig {
   endpoint: string;
@@ -33,6 +35,7 @@ interface LLMConfig {
   maxRetries?: number;
   retryDelayMs?: number;
   timeoutMs?: number;
+  mcpServerId?: string;
 }
 
 interface ToolConversionResult {
@@ -333,6 +336,100 @@ export class LLMAgent extends BaseAgent {
           toolCallId: currentToolCall.id,
         };
         yield endEvt;
+
+        // Execute MCP tool if configured
+        if (this.config.mcpServerId && mcpClientManager.isConnected(this.config.mcpServerId)) {
+          try {
+            logger.info(
+              {
+                toolCallId: currentToolCall.id,
+                toolName: currentToolCall.name,
+                mcpServerId: this.config.mcpServerId,
+              },
+              'Executing tool via MCP'
+            );
+
+            // Parse tool arguments
+            let parsedArgs: Record<string, unknown> = {};
+            try {
+              parsedArgs = JSON.parse(currentToolCall.args || '{}');
+            } catch (parseError) {
+              logger.warn(
+                {
+                  toolCallId: currentToolCall.id,
+                  args: currentToolCall.args,
+                  error: parseError instanceof Error ? parseError.message : 'Unknown error',
+                },
+                'Failed to parse tool arguments, using empty object'
+              );
+            }
+
+            // Call MCP tool
+            const mcpResult = await mcpClientManager.callTool(
+              this.config.mcpServerId,
+              currentToolCall.name,
+              parsedArgs
+            );
+
+            // Generate result message ID
+            const resultMessageId = this.generateMessageId();
+
+            // Emit TOOL_CALL_RESULT with text content
+            const textContent = mcpResult.content
+              ?.filter((c: any) => c.type === 'text')
+              .map((c: any) => c.text)
+              .join('\n') || 'Tool executed successfully';
+
+            const resultEvt: ToolCallResultEvent = {
+              type: EventType.TOOL_CALL_RESULT,
+              toolCallId: currentToolCall.id,
+              messageId: resultMessageId,
+              content: textContent,
+              role: 'tool',
+            };
+            yield resultEvt;
+
+            // Emit CUSTOM event for each UI resource
+            const uiResources = mcpResult.content?.filter((c: any) => c.type === 'resource') || [];
+            for (const resource of uiResources) {
+              const customEvt: CustomEvent = {
+                type: EventType.CUSTOM,
+                name: 'mcp-ui-resource',
+                value: resource,
+              };
+              yield customEvt;
+
+              logger.info(
+                {
+                  toolCallId: currentToolCall.id,
+                  resourceUri: (resource as any).resource?.uri,
+                  resourceMimeType: (resource as any).resource?.mimeType,
+                },
+                'Emitted MCP UI resource as CUSTOM event'
+              );
+            }
+          } catch (mcpError) {
+            logger.error(
+              {
+                toolCallId: currentToolCall.id,
+                toolName: currentToolCall.name,
+                error: mcpError instanceof Error ? mcpError.message : 'Unknown error',
+              },
+              'Failed to execute MCP tool'
+            );
+
+            // Emit error result
+            const errorMessageId = this.generateMessageId();
+            const errorResultEvt: ToolCallResultEvent = {
+              type: EventType.TOOL_CALL_RESULT,
+              toolCallId: currentToolCall.id,
+              messageId: errorMessageId,
+              content: `Error executing tool: ${mcpError instanceof Error ? mcpError.message : 'Unknown error'}`,
+              role: 'tool',
+            };
+            yield errorResultEvt;
+          }
+        }
       }
 
       // Send TEXT_MESSAGE_END if we started a text message
@@ -466,7 +563,7 @@ export class LLMAgent extends BaseAgent {
 
   private buildChatMessages(
     messages: Message[],
-    contextSummary: string[],
+    _contextSummary: string[],
     nameMap?: Map<string, string>
   ): ChatMessage[] {
     const sequence: ChatMessage[] = [
@@ -491,70 +588,10 @@ export class LLMAgent extends BaseAgent {
     return sequence;
   }
 
-  private convertTools(tools: Tool[]): ToolConversionResult {
-    const usedNames = new Set<string>();
-    const sanitizedToOriginal = new Map<string, string>();
-    const originalToSanitized = new Map<string, string>();
+  // Kept for future use when tools need to be passed to LLM
+  // private _convertTools(tools: Tool[]): ToolConversionResult { ... }
+  // private _sanitizeToolName(name: string, usedNames: Set<string>): string { ... }
 
-    const converted = tools.map((tool, index) => {
-      try {
-        const sanitizedName = this.sanitizeToolName(tool.name, usedNames);
-        sanitizedToOriginal.set(sanitizedName, tool.name);
-        originalToSanitized.set(tool.name, sanitizedName);
-
-        if (sanitizedName !== tool.name) {
-          logger.debug(
-            {
-              originalName: tool.name,
-              sanitizedName,
-            },
-            'Sanitized tool name to comply with provider requirements'
-          );
-        }
-
-        return {
-          type: 'function',
-          function: {
-            name: sanitizedName,
-            description: tool.description,
-            parameters: tool.parameters,
-          },
-        };
-      } catch (error) {
-        logger.error(
-          {
-            toolIndex: index,
-            toolName: tool.name,
-            error: error instanceof Error ? error.message : 'Unknown error',
-          },
-          'Error converting tool to OpenAI format'
-        );
-        throw error;
-      }
-    });
-
-    return {
-      tools: converted,
-      sanitizedToOriginal,
-      originalToSanitized,
-    };
-  }
-
-  private sanitizeToolName(name: string, usedNames: Set<string>): string {
-    const pattern = /[^a-zA-Z0-9_-]/g;
-    const baseCandidate = name.replace(pattern, '_');
-    const base = baseCandidate.length > 0 ? baseCandidate : 'tool';
-
-    let finalName = base;
-    let counter = 1;
-    while (usedNames.has(finalName)) {
-      counter++;
-      finalName = `${base}_${counter}`;
-    }
-
-    usedNames.add(finalName);
-    return finalName;
-  }
 
   private getContextSummaryLines(context: RunAgentInput['context']): string[] {
     if (!context || context.length === 0) {
@@ -599,7 +636,7 @@ export class LLMAgent extends BaseAgent {
     runId: string,
     messages: ChatMessage[],
     context: RunAgentInput['context'],
-    contextSummary: string[],
+    _contextSummary: string[],
     toolConversion?: ToolConversionResult
   ): void {
     const previewLimit = 200;
@@ -681,7 +718,6 @@ export class LLMAgent extends BaseAgent {
         threadId,
         runId,
         messages: logMessages,
-        contextSummary,
         context: contextLog,
         tools: toolsLog,
       },
