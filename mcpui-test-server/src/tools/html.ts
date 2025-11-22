@@ -19,10 +19,28 @@ export function registerHTMLTools(server: McpServer): void {
       inputSchema: simpleHtmlInputSchema,
     },
     async (params: unknown) => {
-      const { message = 'Hello from MCP-UI Test Server!' } = z.object(simpleHtmlInputSchema).parse(params);
-      logger.info({ tool: 'showSimpleHtml', message }, 'Tool called');
+      const startTime = Date.now();
+      logger.info(
+        {
+          tool: 'showSimpleHtml',
+          params: JSON.stringify(params),
+          rawParams: params,
+        },
+        '🔧 TOOL CALL: showSimpleHtml - Starting execution'
+      );
+      
+      try {
+        const { message = 'Hello from MCP-UI Test Server!' } = z.object(simpleHtmlInputSchema).parse(params);
+        
+        logger.info(
+          {
+            tool: 'showSimpleHtml',
+            parsedMessage: message,
+          },
+          '🔧 TOOL CALL: showSimpleHtml - Parameters parsed'
+        );
 
-      const htmlString = `
+        const htmlString = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -108,17 +126,56 @@ export function registerHTMLTools(server: McpServer): void {
 </html>
       `;
 
-      try {
-        const uiResource = createUIResource({
-          uri: 'ui://simple-html/1',
-          content: { type: 'rawHtml', htmlString },
-          encoding: 'text',
-        });
+        try {
+          const uiResource = createUIResource({
+            uri: 'ui://simple-html/1',
+            content: { type: 'rawHtml', htmlString },
+            encoding: 'text',
+          });
 
-        return { content: [uiResource] };
-      } catch (error) {
-        logger.error({ error, htmlLength: htmlString.length }, 'Failed to create UI resource for showSimpleHtml');
-        throw error;
+          const result = { content: [uiResource] };
+          const duration = Date.now() - startTime;
+          
+          logger.info(
+            {
+              tool: 'showSimpleHtml',
+              duration,
+              resultContentCount: result.content.length,
+              resultContentType: result.content[0]?.type,
+              resourceUri: (result.content[0] as any)?.resource?.uri,
+              resourceMimeType: (result.content[0] as any)?.resource?.mimeType,
+              htmlLength: htmlString.length,
+            },
+            '✅ TOOL CALL: showSimpleHtml - Execution completed successfully'
+          );
+
+          return result;
+        } catch (error) {
+          const duration = Date.now() - startTime;
+          logger.error(
+            {
+              tool: 'showSimpleHtml',
+              duration,
+              error: error instanceof Error ? error.message : 'Unknown error',
+              errorStack: error instanceof Error ? error.stack : undefined,
+              htmlLength: htmlString.length,
+            },
+            '❌ TOOL CALL: showSimpleHtml - Execution failed'
+          );
+          throw error;
+        }
+      } catch (parseError) {
+        const duration = Date.now() - startTime;
+        logger.error(
+          {
+            tool: 'showSimpleHtml',
+            duration,
+            error: parseError instanceof Error ? parseError.message : 'Unknown error',
+            params: JSON.stringify(params),
+          },
+          '❌ TOOL CALL: showSimpleHtml - Parameter parsing failed'
+        );
+        throw parseError;
       }
     }
   );

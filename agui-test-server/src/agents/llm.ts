@@ -150,29 +150,75 @@ export class LLMAgent extends BaseAgent {
     yield started;
 
     try {
-      // Note: This is a demo server without real tool implementations.
-      // Tools are received from the client but not passed to the LLM.
-      // In a production system, tools would be:
-      // 1. Looked up in a tool registry
-      // 2. Converted to proper JSON Schema format
-      // 3. Passed to the LLM for parameter inference
-      // 4. Executed via MCP or other mechanism
-      // 5. Results fed back to the LLM
+      // Fetch available tools from MCP server if configured
+      let mcpTools: any[] = [];
+      if (this.config.mcpServerId && mcpClientManager.isConnected(this.config.mcpServerId)) {
+        try {
+          logger.info(
+            { threadId, runId, mcpServerId: this.config.mcpServerId },
+            'Fetching available tools from MCP server'
+          );
+          
+          const toolsList = await mcpClientManager.listTools(this.config.mcpServerId);
+          mcpTools = toolsList.map(tool => ({
+            type: 'function',
+            function: {
+              name: tool.name,
+              description: tool.description || `Tool: ${tool.name}`,
+              parameters: tool.inputSchema || {},
+            },
+          }));
+          
+          logger.info(
+            {
+              threadId,
+              runId,
+              toolCount: mcpTools.length,
+              toolNames: toolsList.map(t => t.name),
+            },
+            'Retrieved tools from MCP server'
+          );
+        } catch (error) {
+          logger.warn(
+            {
+              threadId,
+              runId,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            },
+            'Failed to fetch tools from MCP server, continuing without tools'
+          );
+        }
+      }
       
-      // For now, we include tool info in the context summary for awareness
-      const contextSummary = this.getContextSummaryLines(context);
+      // Use tools from request if provided, otherwise use MCP tools
+      const toolsToUse = tools && tools.length > 0 ? tools : [];
+      const llmTools = toolsToUse.length > 0
+        ? toolsToUse.map(tool => ({
+            type: 'function' as const,
+            function: {
+              name: tool.name,
+              description: tool.description || `Tool: ${tool.name}`,
+              parameters: tool.parameters || {},
+            },
+          }))
+        : mcpTools;
       
-      // Add available tools to context summary (informational only)
-      if (tools?.length) {
-        contextSummary.push(`Available tools: ${tools.map(t => t.name).join(', ')}`);
-        logger.debug(
-          { 
-            threadId, 
-            runId, 
-            toolCount: tools.length,
-            toolNames: tools.map(t => t.name),
+      // Log available tools
+      if (llmTools.length > 0) {
+        logger.info(
+          {
+            threadId,
+            runId,
+            toolCount: llmTools.length,
+            toolNames: llmTools.map(t => t.function.name),
+            source: toolsToUse.length > 0 ? 'request' : 'mcp',
           },
-          'Tools available (not passed to LLM in demo mode)'
+          'Tools available for LLM'
+        );
+      } else {
+        logger.warn(
+          { threadId, runId },
+          'No tools available - LLM will not be able to make tool calls'
         );
       }
 
@@ -186,20 +232,37 @@ export class LLMAgent extends BaseAgent {
         'Converted messages to OpenAI format'
       );
 
-      // Call LLM API (without tools - demo mode)
-      const requestBody = {
+      // Call LLM API with tools
+      const requestBody: any = {
         model: this.config.model,
         messages: chatMessages,
         stream: true,
         temperature: this.config.temperature ?? 0.7,
       };
+      
+      // Add tools to request if available
+      if (llmTools.length > 0) {
+        requestBody.tools = llmTools;
+        logger.info(
+          {
+            threadId,
+            runId,
+            toolCount: llmTools.length,
+          },
+          'Including tools in LLM API request'
+        );
+      }
 
       this.logPrompt(
         threadId,
         runId,
         chatMessages,
         context,
-        undefined // No tool conversion in demo mode
+        llmTools.length > 0 ? {
+          tools: llmTools,
+          sanitizedToOriginal: new Map(),
+          originalToSanitized: new Map(),
+        } : undefined
       );
 
       logger.debug(
@@ -244,8 +307,13 @@ export class LLMAgent extends BaseAgent {
         );
       }
 
-      logger.debug(
-        { threadId, runId },
+      logger.info(
+        { 
+          threadId, 
+          runId,
+          status: response.status,
+          contentType: response.headers.get('content-type'),
+        },
         'Received successful response from LLM API, starting to parse stream'
       );
 
@@ -253,14 +321,56 @@ export class LLMAgent extends BaseAgent {
       const messageId = this.generateMessageId();
       let currentToolCall: { id: string; name: string; args: string } | null = null;
       let textMessageStarted = false;
+      let accumulatedText = '';
+      let chunkCount = 0;
+      const toolCalls: Array<{ id: string; name: string; args: string }> = [];
 
       for await (const chunk of this.parseSSEStream(response.body!)) {
-        if (!chunk.choices?.[0]?.delta) continue;
+        chunkCount++;
+        
+        if (!chunk.choices?.[0]?.delta) {
+          const finishReason = chunk.choices?.[0]?.finish_reason;
+          if (finishReason) {
+            logger.debug(
+              { threadId, runId, chunkCount, finishReason },
+              'LLM response finished'
+            );
+          }
+          continue;
+        }
 
+        // Log raw chunk only if it has meaningful content (for debugging)
         const delta = chunk.choices[0].delta;
+        const finishReason = chunk.choices[0].finish_reason;
+        
+        if (delta.content || delta.tool_calls) {
+          logger.debug(
+            {
+              threadId,
+              runId,
+              chunkCount,
+              hasContent: !!delta.content,
+              hasToolCalls: !!delta.tool_calls,
+              contentPreview: delta.content?.substring(0, 50),
+              toolCallPreview: delta.tool_calls?.[0]?.function?.name,
+            },
+            'LLM response chunk with content'
+          );
+        }
 
         // Handle text content
         if (delta.content) {
+          accumulatedText += delta.content;
+          logger.debug(
+            {
+              threadId,
+              runId,
+              chunkCount,
+              contentDelta: delta.content,
+              accumulatedLength: accumulatedText.length,
+            },
+            'LLM text content chunk'
+          );
           // Send TEXT_MESSAGE_START before first chunk
           if (!textMessageStarted) {
             const startEvt: TextMessageStartEvent = {
@@ -285,9 +395,21 @@ export class LLMAgent extends BaseAgent {
           const toolCall = delta.tool_calls[0];
 
           if (toolCall.id) {
+            logger.info(
+              {
+                threadId,
+                runId,
+                chunkCount,
+                toolCallId: toolCall.id,
+                toolName: toolCall.function?.name,
+              },
+              'LLM tool call detected'
+            );
+
             // Start new tool call
             if (currentToolCall) {
               // End previous tool call
+              toolCalls.push({ ...currentToolCall });
               const endPrev: ToolCallEndEvent = {
                 type: EventType.TOOL_CALL_END,
                 toolCallId: currentToolCall.id,
@@ -316,19 +438,88 @@ export class LLMAgent extends BaseAgent {
 
           // Accumulate arguments
           if (toolCall.function?.arguments && currentToolCall) {
-            currentToolCall.args += toolCall.function.arguments;
+            const argsDelta = toolCall.function.arguments;
+            currentToolCall.args += argsDelta;
+            logger.debug(
+              {
+                threadId,
+                runId,
+                chunkCount,
+                toolCallId: currentToolCall.id,
+                toolName: currentToolCall.name,
+                argsDelta,
+                accumulatedArgs: currentToolCall.args,
+              },
+              'LLM tool call arguments chunk'
+            );
             const argsEvt: ToolCallArgsEvent = {
               type: EventType.TOOL_CALL_ARGS,
               toolCallId: currentToolCall.id,
-              delta: toolCall.function.arguments,
+              delta: argsDelta,
             };
             yield argsEvt;
           }
         }
+
+        // Log finish reason if present
+        if (finishReason) {
+          logger.info(
+            {
+              threadId,
+              runId,
+              chunkCount,
+              finishReason,
+              hasText: accumulatedText.length > 0,
+              hasToolCalls: toolCalls.length > 0 || currentToolCall !== null,
+            },
+            'LLM response finished'
+          );
+        }
       }
+
+      // Log summary of complete response
+      if (currentToolCall) {
+        toolCalls.push({ ...currentToolCall });
+      }
+
+      logger.info(
+        {
+          threadId,
+          runId,
+          messageId,
+          totalChunks: chunkCount,
+          textLength: accumulatedText.length,
+          textPreview: accumulatedText.length > 0 
+            ? (accumulatedText.length > 200 
+                ? accumulatedText.substring(0, 200) + '...' 
+                : accumulatedText)
+            : undefined,
+          toolCallCount: toolCalls.length,
+          toolCalls: toolCalls.map(tc => ({
+            id: tc.id,
+            name: tc.name,
+            argsLength: tc.args.length,
+            argsPreview: tc.args.length > 100 
+              ? tc.args.substring(0, 100) + '...' 
+              : tc.args,
+          })),
+        },
+        'LLM response parsing completed'
+      );
 
       // End any pending tool call
       if (currentToolCall) {
+        logger.info(
+          {
+            threadId,
+            runId,
+            toolCallId: currentToolCall.id,
+            toolName: currentToolCall.name,
+            finalArgs: currentToolCall.args,
+          },
+          'Completing final tool call from LLM response'
+        );
+
         const endEvt: ToolCallEndEvent = {
           type: EventType.TOOL_CALL_END,
           toolCallId: currentToolCall.id,
@@ -363,10 +554,36 @@ export class LLMAgent extends BaseAgent {
             }
 
             // Call MCP tool
+            logger.info(
+              {
+                threadId,
+                runId,
+                toolCallId: currentToolCall.id,
+                toolName: currentToolCall.name,
+                toolArgs: parsedArgs,
+                mcpServerId: this.config.mcpServerId,
+              },
+              'Calling MCP tool with parsed arguments'
+            );
+
             const mcpResult = await mcpClientManager.callTool(
               this.config.mcpServerId,
               currentToolCall.name,
               parsedArgs
+            );
+
+            logger.info(
+              {
+                threadId,
+                runId,
+                toolCallId: currentToolCall.id,
+                toolName: currentToolCall.name,
+                resultContentTypes: mcpResult.content?.map((c: any) => c.type) || [],
+                resultContentCount: mcpResult.content?.length || 0,
+                isError: mcpResult.isError,
+                resultPreview: JSON.stringify(mcpResult).substring(0, 500),
+              },
+              'MCP tool call completed'
             );
 
             // Generate result message ID
@@ -432,6 +649,17 @@ export class LLMAgent extends BaseAgent {
 
       // Send TEXT_MESSAGE_END if we started a text message
       if (textMessageStarted) {
+        logger.info(
+          {
+            threadId,
+            runId,
+            messageId,
+            textLength: accumulatedText.length,
+            completeText: accumulatedText,
+          },
+          'LLM text message completed'
+        );
+
         const endEvt: TextMessageEndEvent = {
           type: EventType.TEXT_MESSAGE_END,
           messageId,
@@ -440,6 +668,17 @@ export class LLMAgent extends BaseAgent {
       }
 
       // Finish run
+      logger.info(
+        {
+          threadId,
+          runId,
+          totalChunks: chunkCount,
+          textMessageLength: accumulatedText.length,
+          toolCallCount: toolCalls.length,
+        },
+        'LLM agent run completed successfully'
+      );
+
       const finished: RunFinishedEvent = {
         type: EventType.RUN_FINISHED,
         threadId,
@@ -589,15 +828,16 @@ export class LLMAgent extends BaseAgent {
   // When needed in the future, implement proper tool handling with MCP integration
 
 
-  private getContextSummaryLines(context: RunAgentInput['context']): string[] {
-    if (!context || context.length === 0) {
+  // @ts-ignore - Unused method kept for future use
+  private getContextSummaryLines(_context: RunAgentInput['context']): string[] {
+    if (!_context || _context.length === 0) {
       return [];
     }
 
     const previewLimit = 200;
     const lines: string[] = [];
 
-    for (const entry of context as any[]) {
+    for (const entry of _context as any[]) {
       const key = entry?.key ?? 'unknown';
       const description = typeof entry?.value?.description === 'string'
         ? entry.value.description as string

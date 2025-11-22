@@ -59,7 +59,57 @@ app.get('/health', (req, res) => {
 // MCP endpoint - POST for client-to-server communication
 app.post('/mcp', async (req, res) => {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
-  logger.debug({ headers: req.headers, body: req.body }, 'Received MCP POST request');
+  const requestBody = req.body;
+  const method = requestBody?.method;
+  const requestId = requestBody?.id;
+  const params = requestBody?.params;
+  
+  logger.info(
+    {
+      sessionId,
+      method,
+      requestId,
+      hasParams: !!params,
+      paramsPreview: params ? JSON.stringify(params).substring(0, 200) : undefined,
+    },
+    '📥 Received MCP POST request'
+  );
+  
+  // Log specific request types
+  if (method === 'initialize') {
+    logger.info(
+      {
+        sessionId,
+        protocolVersion: params?.protocolVersion,
+        clientInfo: params?.clientInfo,
+        capabilities: params?.capabilities,
+      },
+      '🔄 MCP initialize request'
+    );
+  } else if (method === 'tools/list') {
+    logger.info({ sessionId }, '📋 MCP tools/list request');
+  } else if (method === 'tools/call') {
+    logger.info(
+      {
+        sessionId,
+        toolName: params?.name,
+        toolArguments: params?.arguments,
+        requestId,
+      },
+      '🔧 MCP tools/call request - TOOL CALL RECEIVED'
+    );
+  } else {
+    logger.debug(
+      {
+        sessionId,
+        method,
+        requestId,
+        body: JSON.stringify(requestBody).substring(0, 500),
+      },
+      'MCP request details'
+    );
+  }
+  
   let transport: StreamableHTTPServerTransport;
 
   try {
@@ -106,10 +156,31 @@ app.post('/mcp', async (req, res) => {
     }
 
     // Handle the request
+    const startTime = Date.now();
     await transport.handleRequest(req, res, req.body);
+    const duration = Date.now() - startTime;
+    
+    logger.info(
+      {
+        sessionId,
+        method,
+        requestId,
+        duration,
+        statusCode: res.statusCode,
+      },
+      '✅ MCP request handled successfully'
+    );
   } catch (error) {
-    logger.error({ error, sessionId }, 'Error handling MCP request');
-    logger.error({ errorStack: (error as Error).stack, errorMessage: (error as Error).message }, 'Full error details');
+    logger.error(
+      {
+        sessionId,
+        method,
+        requestId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        errorStack: error instanceof Error ? error.stack : undefined,
+      },
+      '❌ Error handling MCP request'
+    );
     res.status(500).json({
       error: { message: 'Internal server error' },
     });
