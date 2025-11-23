@@ -31,7 +31,8 @@ const DEFAULT_SYSTEM_PROMPT = 'You are a helpful assistant.';
 function loadFromFile(filename: string): string | null {
   try {
     // Try project root first
-    const rootPath = join(__dirname, '../../..', filename);
+    // __dirname points to dist/config/ at runtime, so '../../' reaches project root
+    const rootPath = join(__dirname, '../../', filename);
     if (existsSync(rootPath)) {
       const content = readFileSync(rootPath, 'utf-8').trim();
       if (content) {
