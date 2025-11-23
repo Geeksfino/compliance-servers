@@ -95,4 +95,3 @@ This fix ensures that clients have full control over tool usage:
 
 This is critical for scenarios where clients want to prevent the LLM from making any tool calls (e.g., for pure conversation, or when testing without tool execution).
 
-

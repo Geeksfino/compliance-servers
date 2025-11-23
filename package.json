@@ -1,0 +1,33 @@
+{
+  "name": "@finclip/agui-mcpui-servers",
+  "version": "1.0.0",
+  "description": "AG-UI and MCP-UI servers with scaffolding tools",
+  "type": "module",
+  "bin": {
+    "scaffold": "dist/tools/scaffold.js"
+  },
+  "scripts": {
+    "scaffold": "tsx tools/scaffold.ts",
+    "build": "tsc -p tsconfig.scaffold.json",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "ag-ui",
+    "mcp-ui",
+    "scaffold",
+    "template",
+    "cli"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
+
+

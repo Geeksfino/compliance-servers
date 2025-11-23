@@ -1,0 +1,20 @@
+{
+  "templateType": "agui-server",
+  "templateVersion": "1.0.0",
+  "name": "{{PROJECT_NAME}}",
+  "description": "{{PROJECT_DESCRIPTION}}",
+  "author": "{{AUTHOR}}",
+  "license": "MIT",
+  "customizableFiles": [
+    "src/config/system-prompt.ts",
+    "src/agents/llm.ts",
+    "src/routes/agent.ts",
+    "src/utils/config.ts"
+  ],
+  "documentation": [
+    "CUSTOMIZATION.md",
+    "README.md"
+  ]
+}
+
+

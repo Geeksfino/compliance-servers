@@ -450,6 +450,5 @@ Once basic testing works:
 
 - `test-http-mcp-integration.sh` - Automated test script
 - `test-mcp-integration.sh` - Manual test guide
-- `MCP-INTEGRATION-SUMMARY.md` - Integration documentation
-- `CLOUD-DEPLOYMENT-GUIDE.md` - Deployment guide
+- `docs/cloud-deployment-guide.md` - Deployment guide
 

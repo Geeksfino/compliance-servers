@@ -1,0 +1,32 @@
+{
+  "name": "{{PROJECT_NAME}}",
+  "version": "1.0.0",
+  "description": "{{PROJECT_DESCRIPTION}}",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "agui-server",
+    "mcpui-server"
+  ],
+  "scripts": {
+    "dev": "./start.sh",
+    "start": "./start.sh",
+    "build": "pnpm -r build",
+    "install:all": "pnpm install",
+    "test": "pnpm -r test",
+    "clean": "pnpm -r clean && rm -rf node_modules"
+  },
+  "keywords": [
+    "ag-ui",
+    "mcp-ui",
+    "agent",
+    "llm",
+    "tools"
+  ],
+  "author": "{{AUTHOR}}",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
+

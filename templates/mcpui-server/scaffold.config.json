@@ -1,0 +1,28 @@
+{
+  "templateType": "mcpui-server",
+  "templateVersion": "1.0.0",
+  "name": "{{PROJECT_NAME}}",
+  "description": "{{PROJECT_DESCRIPTION}}",
+  "author": "{{AUTHOR}}",
+  "license": "MIT",
+  "customizableFiles": [
+    "src/config/tools.ts",
+    "src/tools/index.ts",
+    "src/tools/plugins/",
+    "src/plugins/tool-plugin.ts",
+    "src/tools/plugin-loader.ts"
+  ],
+  "builtInToolCategories": [
+    "html",
+    "url",
+    "remote-dom",
+    "metadata",
+    "async"
+  ],
+  "documentation": [
+    "CUSTOMIZATION.md",
+    "README.md"
+  ]
+}
+
+

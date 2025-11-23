@@ -1,0 +1,31 @@
+{
+  "templateType": "combined-server",
+  "templateVersion": "1.0.0",
+  "name": "{{PROJECT_NAME}}",
+  "description": "{{PROJECT_DESCRIPTION}}",
+  "author": "{{AUTHOR}}",
+  "license": "MIT",
+  "structure": {
+    "agui-server": "AG-UI server (LLM agent)",
+    "mcpui-server": "MCP-UI server (UI tools)"
+  },
+  "customizableFiles": {
+    "agui-server": [
+      "src/config/system-prompt.ts",
+      "src/agents/llm.ts",
+      "src/routes/agent-factory.ts"
+    ],
+    "mcpui-server": [
+      "src/config/tools.ts",
+      "src/tools/index.ts",
+      "src/tools/plugins/"
+    ]
+  },
+  "startScript": "start.sh",
+  "documentation": [
+    "README.md",
+    "agui-server/CUSTOMIZATION.md",
+    "mcpui-server/CUSTOMIZATION.md"
+  ]
+}
+
