@@ -98,13 +98,13 @@ A CLI tool for creating new projects from templates with:
 No installation required:
 
 ```bash
-npx @finclip/agui-mcpui-servers scaffold <project-name>
+npx @geeksfino/agui-mcpui-servers scaffold <project-name>
 ```
 
 ### Global Installation
 
 ```bash
-npm install -g @finclip/agui-mcpui-servers
+npm install -g @geeksfino/agui-mcpui-servers
 scaffold my-project
 ```
 
@@ -140,16 +140,16 @@ scaffold <project-name> [options]
 
 ```bash
 # Basic combined project
-npx @finclip/agui-mcpui-servers scaffold coding-assistant
+npx @geeksfino/agui-mcpui-servers scaffold coding-assistant
 
 # With options
-npx @finclip/agui-mcpui-servers scaffold my-agent \
+npx @geeksfino/agui-mcpui-servers scaffold my-agent \
   --description "My AI agent with custom tools" \
   --author "Your Name" \
   --install
 
 # Custom output directory
-npx @finclip/agui-mcpui-servers scaffold financial-bot \
+npx @geeksfino/agui-mcpui-servers scaffold financial-bot \
   --output ./agents/financial \
   --install
 ```
