@@ -142,7 +142,10 @@ MCPUI_EXAMPLES_ENABLED=true
    - Recommended approach for production tools
    - Auto-discovered from `src/tools/plugins/` directory (excluding examples/)
    - See example plugins in `src/tools/plugins/examples/` for reference
-3. **See**: `mcpui-server/README.md` for detailed guide
+3. **See**: 
+   - **[mcpui-server/PLUGIN-DEVELOPMENT.md](./mcpui-server/PLUGIN-DEVELOPMENT.md)** - Complete plugin development guide
+   - **[mcpui-server/CUSTOMIZATION.md](./mcpui-server/CUSTOMIZATION.md)** - General customization guide
+   - **[mcpui-server/README.md](./mcpui-server/README.md)** - Server overview
 
 ## Development
 

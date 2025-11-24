@@ -79,6 +79,8 @@ export const toolConfig: ToolConfig = {
 };
 ```
 
+**📖 For complete plugin development guide, see [PLUGIN-DEVELOPMENT.md](./PLUGIN-DEVELOPMENT.md)**
+
 **Or use command-line flags:**
 
 ```bash
@@ -389,6 +391,12 @@ docker run -p 3100:3100 --env-file .env mcpui-test-server
 - Sessions expire after 1 hour by default
 - Check `SESSION_TIMEOUT` in `.env`
 - Monitor session count via `/health` endpoint
+
+## Documentation
+
+- **[PLUGIN-DEVELOPMENT.md](./PLUGIN-DEVELOPMENT.md)** - Complete guide for developing custom MCP-UI tool plugins
+- **[CUSTOMIZATION.md](./CUSTOMIZATION.md)** - General customization guide
+- **[../../docs/scaffold-guide.md](../../docs/scaffold-guide.md)** - Scaffold tool usage
 
 ## Contributing
 

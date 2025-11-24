@@ -6,9 +6,21 @@ This repository contains production-ready templates and scaffolding tools for cr
 
 ### Create a New Project
 
+**If using GitHub Packages** (default), configure npm first:
+
+```bash
+# Add to ~/.npmrc (or create it)
+echo "@geeksfino:registry=https://npm.pkg.github.com" >> ~/.npmrc
+echo "//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN" >> ~/.npmrc
+```
+
+Get your GitHub token from: Settings → Developer settings → Personal access tokens
+
+**Then scaffold your project:**
+
 ```bash
 # Combined project with both AG-UI and MCP-UI servers
-npx @finclip/agui-mcpui-servers scaffold my-project
+npx @geeksfino/agui-mcpui-servers scaffold my-project
 ```
 
 Then:

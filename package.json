@@ -1,25 +1,44 @@
 {
-  "name": "@finclip/agui-mcpui-servers",
+  "name": "@geeksfino/agui-mcpui-servers",
   "version": "1.0.0",
   "description": "AG-UI and MCP-UI servers with scaffolding tools",
   "type": "module",
+  "main": "dist/tools/scaffold.js",
   "bin": {
     "scaffold": "dist/tools/scaffold.js"
   },
+  "files": [
+    "dist",
+    "templates",
+    "README.md",
+    "docs"
+  ],
   "scripts": {
     "scaffold": "tsx tools/scaffold.ts",
     "build": "tsc -p tsconfig.scaffold.json",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "ag-ui",
     "mcp-ui",
     "scaffold",
     "template",
-    "cli"
+    "cli",
+    "agent",
+    "llm",
+    "model-context-protocol"
   ],
-  "author": "",
+  "author": "FinClip",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/finclip/compliance-servers.git"
+  },
+  "bugs": {
+    "url": "https://github.com/finclip/compliance-servers/issues"
+  },
+  "homepage": "https://github.com/finclip/compliance-servers#readme",
   "devDependencies": {
     "@types/node": "^22.10.2",
     "tsx": "^4.19.2",
@@ -27,7 +46,9 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
   }
 }
-
-

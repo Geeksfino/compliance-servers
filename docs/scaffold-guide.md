@@ -20,7 +20,7 @@ This guide explains how to use the scaffold tool to create new AG-UI and MCP-UI 
 Create a new combined project (AG-UI + MCP-UI servers):
 
 ```bash
-npx @finclip/agui-mcpui-servers scaffold my-project
+npx @geeksfino/agui-mcpui-servers scaffold my-project
 cd my-project
 pnpm install
 ./start.sh
@@ -47,7 +47,7 @@ npx @finclip/agui-mcpui-servers scaffold <template> <name>
 Install globally for repeated use:
 
 ```bash
-npm install -g @finclip/agui-mcpui-servers
+npm install -g @geeksfino/agui-mcpui-servers
 scaffold <template> <name>
 ```
 
@@ -179,7 +179,7 @@ cd data-viz-agent
 ### Example 4: Project Without Auto-Install
 
 ```bash
-npx @finclip/agui-mcpui-servers scaffold my-project \
+npx @geeksfino/agui-mcpui-servers scaffold my-project \
   --output ./my-projects/agent \
   --no-git
 cd ./my-projects/agent

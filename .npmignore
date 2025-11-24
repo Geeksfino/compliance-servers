@@ -1,0 +1,53 @@
+# Test servers (not part of published package)
+agui-test-server/
+mcpui-test-server/
+
+# Development files
+node_modules/
+**/node_modules/
+*.log
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Build artifacts in templates (templates should only include source)
+templates/**/dist/
+templates/**/node_modules/
+templates/**/*.log
+templates/**/pnpm-lock.yaml
+templates/**/package-lock.json
+templates/**/yarn.lock
+
+# Build artifacts (dist/tools is included via files field)
+# dist/ is included in package.json files field
+
+# Source files (only templates are needed)
+tools/
+tsconfig.scaffold.json
+
+# Git
+.git/
+.gitignore
+
+# Test files
+test-*.sh
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Lock files (let users manage their own)
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Documentation that's not needed in package
+# (README.md and docs/ are included via files field)
+

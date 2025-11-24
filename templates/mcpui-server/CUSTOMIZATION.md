@@ -163,7 +163,9 @@ customToolPaths: ['./custom/my-tools.js'],
 
 Or import and call directly in `src/tools/index.ts`.
 
-### Method 3: Create a Plugin
+### Method 3: Create a Plugin (Recommended)
+
+**📖 See [PLUGIN-DEVELOPMENT.md](./PLUGIN-DEVELOPMENT.md) for the complete plugin development guide.**
 
 Create `src/tools/plugins/my-plugin.ts`:
 

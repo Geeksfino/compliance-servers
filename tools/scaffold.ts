@@ -3,8 +3,8 @@
  * Scaffold CLI for AG-UI and MCP-UI Servers
  * 
  * Usage:
- *   npx @finclip/agui-mcpui-servers scaffold my-project
- *   npx @finclip/agui-mcpui-servers scaffold my-project --description "My agent"
+ *   npx @geeksfino/agui-mcpui-servers scaffold my-project
+ *   npx @geeksfino/agui-mcpui-servers scaffold my-project --description "My agent"
  * 
  * Or with pnpm:
  *   pnpm scaffold my-project
