@@ -362,7 +362,7 @@ MIT
 
 ## Changelog
 
-### v1.0.0
+### v1.0.1
 
 - Initial release
 - AG-UI server template with configurable system prompts
