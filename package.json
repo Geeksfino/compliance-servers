@@ -1,10 +1,11 @@
 {
-  "name": "@geeksfino/agui-mcpui-servers",
+  "name": "@finogeek/agui-mcpui-servers",
   "version": "1.0.0",
   "description": "AG-UI and MCP-UI servers with scaffolding tools",
   "type": "module",
   "main": "dist/tools/scaffold.js",
   "bin": {
+    "agui-mcpui-scaffold": "dist/tools/scaffold.js",
     "scaffold": "dist/tools/scaffold.js"
   },
   "files": [
@@ -48,7 +49,7 @@
     "node": ">=20.0.0"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
+    "registry": "https://registry.npmjs.org",
     "access": "public"
   }
 }
