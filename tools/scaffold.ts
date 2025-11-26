@@ -433,10 +433,8 @@ async function main() {
   }
 }
 
-// Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
-}
+// Run when executed as CLI
+main();
 
 export { scaffold, type ScaffoldOptions };
 
