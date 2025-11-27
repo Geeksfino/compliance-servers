@@ -4,6 +4,11 @@
 
 set -e
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Change to the script directory so relative paths work correctly
+cd "$SCRIPT_DIR"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -111,7 +116,7 @@ if [ "${ENABLE_EXAMPLES}" = "true" ]; then
   echo -e "${BLUE}  → Example plugins enabled${NC}"
 fi
 cd mcpui-server
-${MCPUI_CMD} > ../mcpui-server.log 2>&1 &
+${MCPUI_CMD} > "${SCRIPT_DIR}/mcpui-server.log" 2>&1 &
 MCPUI_PID=$!
 cd ..
 
@@ -149,7 +154,7 @@ fi
 # Start AG-UI server with MCP connection
 echo -e "${YELLOW}Starting AG-UI server (${AGUI_MODE_LABEL} mode)...${NC}"
 cd agui-server
-MCP_SERVER_URL=${MCP_SERVER_URL} pnpm run dev ${AGUI_MODE_FLAG} > ../agui-server.log 2>&1 &
+MCP_SERVER_URL=${MCP_SERVER_URL} pnpm run dev ${AGUI_MODE_FLAG} > "${SCRIPT_DIR}/agui-server.log" 2>&1 &
 AGUI_PID=$!
 cd ..
 
@@ -174,8 +179,8 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Both servers are running!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
-echo -e "MCP-UI Server logs: ${BLUE}tail -f mcpui-server.log${NC}"
-echo -e "AG-UI Server logs:  ${BLUE}tail -f agui-server.log${NC}"
+echo -e "MCP-UI Server logs: ${BLUE}tail -f ${SCRIPT_DIR}/mcpui-server.log${NC}"
+echo -e "AG-UI Server logs:  ${BLUE}tail -f ${SCRIPT_DIR}/agui-server.log${NC}"
 echo ""
 echo -e "${YELLOW}Press Ctrl+C to stop both servers${NC}"
 echo ""
