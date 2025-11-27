@@ -130,10 +130,26 @@ for i in {1..30}; do
   sleep 1
 done
 
+# Determine AG-UI agent mode (defaults to emulated if not specified)
+AGENT_MODE_VALUE="${AGENT_MODE:-}"
+if [ -z "${AGENT_MODE_VALUE}" ] && [ -f "agui-server/.env" ]; then
+  AGENT_MODE_VALUE=$(grep -E '^AGENT_MODE=' agui-server/.env | tail -1 | cut -d'=' -f2 | tr -d '\"' | tr -d '\r')
+fi
+
+AGUI_MODE_FLAG=""
+AGUI_MODE_LABEL="default"
+if [ "${AGENT_MODE_VALUE}" = "llm" ]; then
+  AGUI_MODE_FLAG="--use-llm"
+  AGUI_MODE_LABEL="LLM"
+elif [ "${AGENT_MODE_VALUE}" = "emulated" ]; then
+  AGUI_MODE_FLAG="--emulated"
+  AGUI_MODE_LABEL="emulated"
+fi
+
 # Start AG-UI server with MCP connection
-echo -e "${YELLOW}Starting AG-UI server with MCP connection...${NC}"
+echo -e "${YELLOW}Starting AG-UI server (${AGUI_MODE_LABEL} mode)...${NC}"
 cd agui-server
-MCP_SERVER_URL=${MCP_SERVER_URL} pnpm run dev --use-llm > ../agui-server.log 2>&1 &
+MCP_SERVER_URL=${MCP_SERVER_URL} pnpm run dev ${AGUI_MODE_FLAG} > ../agui-server.log 2>&1 &
 AGUI_PID=$!
 cd ..
 

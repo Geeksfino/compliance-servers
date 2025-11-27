@@ -23,11 +23,18 @@ import { createUIResource } from '@mcp-ui/server';
 import type { MCPUIToolPlugin } from '../../tool-plugin.js';
 import { logger } from '../../../utils/logger.js';
 
-const simpleHtmlInputSchema = {
+// Zod schema for validation
+const simpleHtmlInputSchema = z.object({
   message: z.string().describe('Custom message to display').optional(),
-};
+});
 
-const emptyInputSchema = {};
+// Input schema for MCP (using Zod shape to avoid type inference issues)
+const simpleHtmlInputSchemaShape = {
+  message: z.string().describe('Custom message to display').optional(),
+} as const;
+
+const emptyInputSchema = z.object({});
+const emptyInputSchemaShape = {} as const;
 
 export const htmlToolsPlugin: MCPUIToolPlugin = {
   name: 'example-html-tools',
@@ -42,7 +49,7 @@ export const htmlToolsPlugin: MCPUIToolPlugin = {
       {
         title: 'Show Simple HTML',
         description: 'Displays basic HTML content with styling and interactive buttons',
-        inputSchema: simpleHtmlInputSchema,
+        inputSchema: simpleHtmlInputSchemaShape as any,
       },
       async (params: unknown) => {
         const startTime = Date.now();
@@ -56,7 +63,7 @@ export const htmlToolsPlugin: MCPUIToolPlugin = {
         );
         
         try {
-          const { message = 'Hello from MCP-UI Test Server!' } = z.object(simpleHtmlInputSchema).parse(params);
+          const { message = 'Hello from MCP-UI Test Server!' } = simpleHtmlInputSchema.parse(params);
           
           logger.info(
             {
@@ -212,10 +219,10 @@ export const htmlToolsPlugin: MCPUIToolPlugin = {
       {
         title: 'Show Raw HTML',
         description: 'Minimal raw HTML sample similar to MCP-UI reference demo',
-        inputSchema: emptyInputSchema,
+        inputSchema: emptyInputSchemaShape as any,
       },
-      async (params) => {
-        z.object(emptyInputSchema).parse(params);
+      async (params: unknown) => {
+        emptyInputSchema.parse(params);
         logger.info({ tool: 'showRawHtml' }, 'Tool called');
 
         const uiResource = createUIResource({
@@ -234,10 +241,10 @@ export const htmlToolsPlugin: MCPUIToolPlugin = {
       {
         title: 'Show Interactive Form',
         description: 'Displays an interactive form with validation and async submission',
-        inputSchema: emptyInputSchema,
+        inputSchema: emptyInputSchemaShape as any,
       },
       async (params: unknown) => {
-        z.object(emptyInputSchema).parse(params);
+        emptyInputSchema.parse(params);
         logger.info({ tool: 'showInteractiveForm' }, 'Tool called');
 
         const formHtml = `
@@ -401,10 +408,10 @@ export const htmlToolsPlugin: MCPUIToolPlugin = {
       {
         title: 'Show Complex Layout',
         description: 'Displays a multi-column layout with images and styled content',
-        inputSchema: emptyInputSchema,
+        inputSchema: emptyInputSchemaShape as any,
       },
       async (params: unknown) => {
-        z.object(emptyInputSchema).parse(params);
+        emptyInputSchema.parse(params);
         logger.info({ tool: 'showComplexLayout' }, 'Tool called');
 
         const layoutHtml = `
