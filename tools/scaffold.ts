@@ -244,15 +244,20 @@ function createScaffoldConfig(options: ScaffoldOptions): any {
 async function scaffold(options: ScaffoldOptions): Promise<void> {
   log(`\n🚀 Scaffolding combined AG-UI + MCP-UI project: ${options.projectName}\n`, 'bright');
   
-  // Determine paths - template is directly in templates directory
-  // __dirname is dist/tools when running from built code, so go up to repo root
-  const templatesDir = join(__dirname, '..', '..', 'templates');
-  const templateDir = templatesDir;
+  // Determine template directory (support both built dist/ and source tools/ layouts)
+  const templateDirCandidates = [
+    join(__dirname, '..', '..', 'templates'), // when running from dist/tools
+    join(__dirname, '..', 'templates'),       // when running from tools/
+    join(process.cwd(), 'templates'),         // fallback to current working dir
+  ];
+
+  const templateDir = templateDirCandidates.find(dir => existsSync(dir));
+  
   const outputDir = resolve(options.outputPath || options.projectName);
   
   // Validate template exists
-  if (!existsSync(templateDir)) {
-    error(`Template directory not found: ${templateDir}`);
+  if (!templateDir) {
+    error(`Template directory not found. Checked: ${templateDirCandidates.join(', ')}`);
     process.exit(1);
   }
   
