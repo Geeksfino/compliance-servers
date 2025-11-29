@@ -185,16 +185,45 @@ DEFAULT_AGENT=echo
 
 ### LiteLLM Agent
 
-Connect to any LLM via LiteLLM proxy.
+Connect to any mainstream LLM provider via the LiteLLM proxy.
 
-**Setup LiteLLM**:
+
+**LiteLLM Proxy Startup Guide (Recommended: Built-in Script):**
+1. It is recommended to use the built-in `start-litellm.sh` script to automatically start the LiteLLM proxy. This requires no manual virtual environment activation or manual dependency management.
+
 ```bash
-# Install LiteLLM
-pip install litellm
+# Method 1: Pass the DeepSeek API key directly
+DEEPSEEK_API_KEY=your-api-key ./scripts/start-litellm.sh
 
-# Start proxy
+# Method 2: Export the environment variable first, then run the script
+export DEEPSEEK_API_KEY=your-api-key
+./scripts/start-litellm.sh
+```
+
+2. (First-time setup) If LiteLLM dependencies are not installed yet, please create a Python virtual environment and install dependencies in your project root directory:
+
+```bash
+cd /your/project/path
+python3 -m venv .venv
+source .venv/bin/activate
+pip install 'litellm[proxy]'
+```
+> Note: Make sure to use quotes in `'litellm[proxy]'` to ensure all dependencies are installed.
+
+3. After startup, the LiteLLM proxy will listen on `http://localhost:4000`, and the API key will be passed through the environment variable.
+
+**Manual Startup (Advanced, Optional):**
+
+```bash
+# Activate virtual environment
+source .venv/bin/activate
+
+# Start LiteLLM proxy (customize the model if needed)
 litellm --model deepseek/deepseek-chat --api_key $DEEPSEEK_API_KEY
 ```
+
+For more detailed instructions, see [../scripts/README.md](../scripts/README.md).
+
 
 **Configuration**:
 ```env

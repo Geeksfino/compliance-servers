@@ -15,14 +15,20 @@ import { logger } from '../src/utils/logger.js';
 
 describe('LLMAgent error logging', () => {
   it('should log detailed error information when error occurs with tools provided', async () => {
+    // Increase timeout for this test since it involves network retries
+    // With 1 retry, 100ms delay, and 1s timeout: ~2-3 seconds total
     const infoSpy = vi.spyOn(logger, 'info');
     const errorSpy = vi.spyOn(logger, 'error');
 
     // Use invalid endpoint to trigger an error
+    // Use shorter timeout and fewer retries for faster test execution
     const agent = new LLMAgent({
       endpoint: 'http://invalid-nonexistent-domain-for-testing.local:9999/v1',
       apiKey: 'test-key',
       model: 'test-model',
+      maxRetries: 1,
+      retryDelayMs: 100,
+      timeoutMs: 1000, // 1 second timeout for faster test
     });
 
     const input: RunAgentInput = {
@@ -112,17 +118,22 @@ describe('LLMAgent error logging', () => {
     }
 
     vi.restoreAllMocks();
-  });
+  }, { timeout: 10000 }); // 10 second timeout for network retries
 
   it('should log error information without tools when no tools provided', async () => {
+    // Increase timeout for this test since it involves network retries
     const infoSpy = vi.spyOn(logger, 'info');
     const errorSpy = vi.spyOn(logger, 'error');
 
     // Use invalid endpoint to trigger an error
+    // Use shorter timeout and fewer retries for faster test execution
     const agent = new LLMAgent({
       endpoint: 'http://invalid-nonexistent-domain-for-testing.local:9999/v1',
       apiKey: 'test-key',
       model: 'test-model',
+      maxRetries: 1,
+      retryDelayMs: 100,
+      timeoutMs: 1000, // 1 second timeout for faster test
     });
 
     const input: RunAgentInput = {
@@ -177,5 +188,5 @@ describe('LLMAgent error logging', () => {
     }
 
     vi.restoreAllMocks();
-  });
+  }, { timeout: 10000 }); // 10 second timeout for network retries
 });

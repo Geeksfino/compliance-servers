@@ -17,10 +17,17 @@ import { createUIResource } from '@mcp-ui/server';
 import type { MCPUIToolPlugin } from '../../tool-plugin.js';
 import { logger } from '../../../utils/logger.js';
 
-const asyncRequestInputShape = {
+// Zod schema for validation
+const asyncRequestInputShape = z.object({
   data: z.string().min(1).describe('Payload data to process'),
   timestamp: z.number().int().describe('Client timestamp (ms since epoch)'),
-};
+});
+
+// Input schema for MCP (using Zod shape to avoid type inference issues)
+const asyncRequestInputSchemaShape = {
+  data: z.string().min(1).describe('Payload data to process'),
+  timestamp: z.number().int().describe('Client timestamp (ms since epoch)'),
+} as const;
 
 export const asyncToolsPlugin: MCPUIToolPlugin = {
   name: 'example-async-tools',
@@ -153,10 +160,10 @@ export const asyncToolsPlugin: MCPUIToolPlugin = {
       {
         title: 'Process Async Request',
         description: 'Handles async tool call demo requests and returns processed data',
-        inputSchema: asyncRequestInputShape,
+        inputSchema: asyncRequestInputSchemaShape as any,
       },
       async (params: unknown) => {
-        const parsed = z.object(asyncRequestInputShape).parse(params);
+        const parsed = asyncRequestInputShape.parse(params);
         logger.info({ tool: 'processAsyncRequest', ...parsed }, 'Processing async request');
 
         // Simulate async processing delay
@@ -171,7 +178,7 @@ export const asyncToolsPlugin: MCPUIToolPlugin = {
         return {
           content: [
             {
-              type: 'text',
+              type: 'text' as const,
               text: JSON.stringify(responsePayload),
             },
           ],

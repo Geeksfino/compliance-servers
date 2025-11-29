@@ -59,6 +59,7 @@ echo ""
 echo "Test 1: Initialize MCP session"
 RESPONSE=$(curl -s -X POST http://localhost:3100/mcp \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{
     "jsonrpc": "2.0",
     "id": 1,
@@ -75,6 +76,7 @@ if [ -z "$SESSION_ID" ]; then
     # Try to extract from headers if available in response
     SESSION_ID=$(curl -i -s -X POST http://localhost:3100/mcp \
       -H "Content-Type: application/json" \
+      -H "Accept: application/json, text/event-stream" \
       -d '{
         "jsonrpc": "2.0",
         "id": 1,
@@ -100,6 +102,7 @@ echo ""
 echo "Test 2: List available tools"
 TOOLS=$(curl -s -X POST http://localhost:3100/mcp \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -H "mcp-session-id: $SESSION_ID" \
   -d '{
     "jsonrpc": "2.0",
@@ -115,6 +118,7 @@ echo ""
 echo "Test 3: Call showSimpleHtml tool"
 RESULT=$(curl -s -X POST http://localhost:3100/mcp \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -H "mcp-session-id: $SESSION_ID" \
   -d '{
     "jsonrpc": "2.0",
@@ -174,6 +178,7 @@ echo ""
 echo "Test 4: Call AG-UI agent endpoint"
 AGUI_RESPONSE=$(curl -s -X POST http://localhost:3000/agent \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{
     "threadId": "test-123",
     "runId": "run_1",

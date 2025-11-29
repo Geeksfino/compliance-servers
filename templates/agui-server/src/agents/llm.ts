@@ -201,14 +201,67 @@ export class LLMAgent extends BaseAgent {
       // - tools === [] -> use empty array (explicitly disable tools)
       // - tools === [...] -> use provided tools
       const llmTools = tools !== undefined && tools !== null
-        ? tools.map(tool => ({
-            type: 'function' as const,
-            function: {
-              name: tool.name,
-              description: tool.description || `Tool: ${tool.name}`,
-              parameters: tool.parameters || {},
-            },
-          }))
+        ? tools.map(tool => {
+            // Validate and fix parameters format to ensure it's a valid JSON Schema object
+            let parameters = tool.parameters || {};
+            
+            // If parameters is a string, convert to empty object
+            if (typeof parameters === 'string') {
+              logger.warn(
+                {
+                  threadId,
+                  runId,
+                  toolName: tool.name,
+                  invalidParameters: parameters,
+                },
+                'Tool parameters is a string, converting to empty schema'
+              );
+              parameters = {};
+            }
+            
+            // Ensure parameters is an object type (not array or other types)
+            if (typeof parameters !== 'object' || Array.isArray(parameters) || parameters === null) {
+              logger.warn(
+                {
+                  threadId,
+                  runId,
+                  toolName: tool.name,
+                  invalidParametersType: typeof parameters,
+                },
+                'Tool parameters is not a valid object, converting to empty schema'
+              );
+              parameters = {};
+            }
+            
+            // Ensure it has type field (JSON Schema requirement)
+            // If it's already a valid schema object, keep it; otherwise create a proper schema
+            if (!parameters.type) {
+              // If it has properties or other schema fields, preserve them but add type
+              if (parameters.properties || parameters.required || Object.keys(parameters).length > 0) {
+                parameters = {
+                  type: 'object',
+                  properties: parameters.properties || {},
+                  required: parameters.required || [],
+                  ...(parameters.additionalProperties !== undefined && { additionalProperties: parameters.additionalProperties }),
+                };
+              } else {
+                // Empty schema - create minimal valid schema
+                parameters = {
+                  type: 'object',
+                  properties: {},
+                };
+              }
+            }
+            
+            return {
+              type: 'function' as const,
+              function: {
+                name: tool.name,
+                description: tool.description || `Tool: ${tool.name}`,
+                parameters: parameters,
+              },
+            };
+          })
         : mcpTools;
       
       // Log available tools

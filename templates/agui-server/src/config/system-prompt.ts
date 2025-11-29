@@ -22,7 +22,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // CUSTOMIZE: Default system prompt
-const DEFAULT_SYSTEM_PROMPT = 'You are a helpful assistant.';
+const DEFAULT_SYSTEM_PROMPT = 'You are a helpful assistant. Answer questions directly and concisely. Do not introduce your capabilities unless explicitly asked.';
 
 /**
  * Load system prompt from a file

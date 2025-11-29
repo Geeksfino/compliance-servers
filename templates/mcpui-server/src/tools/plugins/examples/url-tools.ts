@@ -17,11 +17,18 @@ import { createUIResource } from '@mcp-ui/server';
 import type { MCPUIToolPlugin } from '../../tool-plugin.js';
 import { logger } from '../../../utils/logger.js';
 
-const customUrlInputSchema = {
+// Zod schema for validation
+const customUrlInputSchema = z.object({
   url: z.string().describe('The URL to display (must be https://)'),
-};
+});
 
-const emptyInputSchema = {};
+// Input schema for MCP (using Zod shape to avoid type inference issues)
+const customUrlInputSchemaShape = {
+  url: z.string().describe('The URL to display (must be https://)'),
+} as const;
+
+const emptyInputSchema = z.object({});
+const emptyInputSchemaShape = {} as const;
 
 export const urlToolsPlugin: MCPUIToolPlugin = {
   name: 'example-url-tools',
@@ -36,10 +43,10 @@ export const urlToolsPlugin: MCPUIToolPlugin = {
       {
         title: 'Show Example Site',
         description: 'Displays example.com in an iframe',
-        inputSchema: emptyInputSchema,
+        inputSchema: emptyInputSchemaShape as any,
       },
       async (params: unknown) => {
-        z.object(emptyInputSchema).parse(params);
+        emptyInputSchema.parse(params);
         logger.info({ tool: 'showExampleSite' }, 'Tool called');
 
         const uiResource = createUIResource({
@@ -58,10 +65,10 @@ export const urlToolsPlugin: MCPUIToolPlugin = {
       {
         title: 'Show Custom URL',
         description: 'Displays a custom URL provided by the user',
-        inputSchema: customUrlInputSchema,
+        inputSchema: customUrlInputSchemaShape as any,
       },
       async (params: unknown) => {
-        const { url } = z.object(customUrlInputSchema).parse(params);
+        const { url } = customUrlInputSchema.parse(params);
         logger.info({ tool: 'showCustomUrl', url }, 'Tool called');
 
         // Validate URL
@@ -85,10 +92,10 @@ export const urlToolsPlugin: MCPUIToolPlugin = {
       {
         title: 'Show API Documentation',
         description: 'Displays MCP-UI documentation',
-        inputSchema: emptyInputSchema,
+        inputSchema: emptyInputSchemaShape as any,
       },
       async (params: unknown) => {
-        z.object(emptyInputSchema).parse(params);
+        emptyInputSchema.parse(params);
         logger.info({ tool: 'showApiDocs' }, 'Tool called');
 
         const uiResource = createUIResource({

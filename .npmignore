@@ -42,6 +42,7 @@ test-*.sh
 .env
 .env.local
 .env.*.local
+.venv/
 
 # Lock files (let users manage their own)
 package-lock.json

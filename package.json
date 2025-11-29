@@ -1,6 +1,6 @@
 {
   "name": "@finogeek/agui-mcpui-servers",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "AG-UI and MCP-UI servers with scaffolding tools",
   "type": "module",
   "main": "dist/tools/scaffold.js",

@@ -362,7 +362,18 @@ MIT
 
 ## Changelog
 
-### v1.0.0
+### v1.0.3
+
+- Refactored LiteLLM integration: reorganized scripts, updated to .venv, improved error handling
+- Added server-side validation and auto-fix for tool parameters to prevent 400 errors
+- Fixed scaffold template path resolution
+- Added script directory detection to fix relative path issues when running scripts from different locations
+- Improved logging: start.sh logs now written to templates/logs directory
+- Fixed test timeout issues in LLM agent logging tests
+- Enhanced HTTP MCP integration tests with SSE-friendly Accept header
+- Fixed CLI execution for npx compatibility
+
+### v1.0.1
 
 - Initial release
 - AG-UI server template with configurable system prompts

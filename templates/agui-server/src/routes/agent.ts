@@ -101,11 +101,14 @@ export const agentRoute: FastifyPluginAsync = async (fastify) => {
           'Streaming events via POST response (postStream mode)'
         );
 
+        // Create agent BEFORE setting headers, so errors can be handled properly
+        const agent = await createAgent(config, input);
+
         // Create encoder
         const acceptHeader = request.headers.accept;
         const encoder = new SSEEncoder(acceptHeader);
 
-        // Set SSE headers
+        // Set SSE headers (only after agent creation succeeds)
         reply.raw.writeHead(200, {
           'Content-Type': encoder.getContentType(),
           'Cache-Control': 'no-cache',
@@ -116,8 +119,7 @@ export const agentRoute: FastifyPluginAsync = async (fastify) => {
         // Send retry directive
         reply.raw.write(SSEEncoder.retry(config.sseRetryMs));
 
-        // Create and run agent
-        const agent = await createAgent(config, input);
+        // Run agent and stream events
         const events = agent.run(input);
 
         // Stream events
@@ -168,11 +170,33 @@ export const agentRoute: FastifyPluginAsync = async (fastify) => {
 
       logger.error(errorInfo, 'Agent request failed');
 
-      if (!reply.sent) {
+      // Check if headers have been sent (in postStream mode)
+      if (!reply.sent && !reply.raw.headersSent) {
         reply.status(500).send({
           error: 'Internal Server Error',
           message: error instanceof Error ? error.message : 'Unknown error',
         });
+      } else if (reply.raw.headersSent) {
+        // Headers already sent, try to send error as SSE event
+        try {
+          const errorData = JSON.stringify({
+            type: 'ERROR',
+            error: error instanceof Error ? error.message : 'Unknown error',
+            threadId: errorInfo.threadId,
+            runId: errorInfo.runId,
+          });
+          const errorEvent = `event: message\ndata: ${errorData}\n\n`;
+          reply.raw.write(errorEvent);
+          reply.raw.end();
+        } catch (writeError) {
+          // If we can't write, just log and close
+          logger.error({ writeError }, 'Failed to write error event');
+          try {
+            reply.raw.end();
+          } catch {
+            // Ignore errors when closing
+          }
+        }
       }
     }
   });
