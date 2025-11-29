@@ -1,6 +1,8 @@
 # Compliance Servers - AG-UI and MCP-UI Templates
 
-[English](./README.md) | [中文](./README.zh.md) | [中文 (GitHub)](https://github.com/finclip/compliance-servers/blob/main/README.zh.md)
+[English](./README.md) | [中文](./README.zh.md)
+
+> **Language / 语言**: This README is in English. For Chinese documentation, see [README.zh.md](./README.zh.md) or [view on GitHub](https://github.com/finclip/compliance-servers/blob/main/README.zh.md).
 
 This repository contains production-ready templates and scaffolding tools for creating AG-UI and MCP-UI servers.
 
