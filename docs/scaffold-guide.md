@@ -20,7 +20,7 @@ This guide explains how to use the scaffold tool to create new AG-UI and MCP-UI 
 Create a new combined project (AG-UI + MCP-UI servers):
 
 ```bash
-npx @geeksfino/agui-mcpui-servers scaffold my-project
+npx @finogeek/agui-mcpui-servers my-project
 cd my-project
 pnpm install
 ./start.sh
@@ -39,7 +39,7 @@ The `start.sh` script automatically:
 No installation required. Use `npx` to run the scaffold tool directly:
 
 ```bash
-npx @finclip/agui-mcpui-servers scaffold <template> <name>
+npx @finogeek/agui-mcpui-servers <project-name>
 ```
 
 ### Option 2: Global Installation
@@ -47,8 +47,8 @@ npx @finclip/agui-mcpui-servers scaffold <template> <name>
 Install globally for repeated use:
 
 ```bash
-npm install -g @geeksfino/agui-mcpui-servers
-scaffold <template> <name>
+npm install -g @finogeek/agui-mcpui-servers
+scaffold <project-name>
 ```
 
 ### Option 3: Local pnpm
@@ -146,7 +146,7 @@ The MCP-UI server provides:
 ### Example 1: Basic Combined Project
 
 ```bash
-npx @finclip/agui-mcpui-servers scaffold coding-assistant --install
+npx @finogeek/agui-mcpui-servers coding-assistant --install
 cd coding-assistant
 # Edit agui-server/src/config/system-prompt.ts
 # Edit mcpui-server/src/config/tools.ts
@@ -156,7 +156,7 @@ cd coding-assistant
 ### Example 2: Project with Custom Output
 
 ```bash
-npx @finclip/agui-mcpui-servers scaffold financial-advisor \
+npx @finogeek/agui-mcpui-servers financial-advisor \
   --description "Financial analysis agent" \
   --author "Finance Team" \
   --output ./agents/financial \
@@ -168,7 +168,7 @@ cd ./agents/financial
 ### Example 3: Project with Custom Tools
 
 ```bash
-npx @finclip/agui-mcpui-servers scaffold data-viz-agent \
+npx @finogeek/agui-mcpui-servers data-viz-agent \
   --description "Data visualization agent with custom tools" \
   --install
 cd data-viz-agent
@@ -179,7 +179,7 @@ cd data-viz-agent
 ### Example 4: Project Without Auto-Install
 
 ```bash
-npx @geeksfino/agui-mcpui-servers scaffold my-project \
+npx @finogeek/agui-mcpui-servers my-project \
   --output ./my-projects/agent \
   --no-git
 cd ./my-projects/agent
@@ -478,7 +478,8 @@ CMD ["pnpm", "start"]
 - [AG-UI Documentation](https://docs.ag-ui.com)
 - [MCP Documentation](https://docs.modelcontextprotocol.io)
 - [MCP-UI Documentation](https://docs.mcp-ui.dev)
-- [Template CUSTOMIZATION.md](./templates/agui-server-template/CUSTOMIZATION.md)
+- [LiteLLM Integration Guide](./litellm-guide.md) - Complete guide for setting up LiteLLM
+- [Template CUSTOMIZATION.md](../templates/agui-server/CUSTOMIZATION.md)
 - [Deployment Guide](./cloud-deployment-guide.md)
 
 ## Support

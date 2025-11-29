@@ -187,6 +187,7 @@ DEFAULT_AGENT=echo
 
 Connect to any mainstream LLM provider via the LiteLLM proxy.
 
+> **📖 For complete LiteLLM setup instructions, see [../../docs/litellm-guide.md](../../docs/litellm-guide.md)**
 
 **LiteLLM Proxy Startup Guide (Recommended: Built-in Script):**
 1. It is recommended to use the built-in `start-litellm.sh` script to automatically start the LiteLLM proxy. This requires no manual virtual environment activation or manual dependency management.
@@ -235,14 +236,38 @@ LITELLM_MODEL=deepseek-chat
 
 ### DeepSeek Agent
 
-Direct DeepSeek API integration.
+Direct DeepSeek API integration. **No LiteLLM required** - connects directly to DeepSeek's API.
 
-**Configuration**:
+**Quick Setup:**
+
+1. Get your DeepSeek API key from https://platform.deepseek.com/
+
+2. Configure your `.env` file:
 ```env
-DEFAULT_AGENT=deepseek
-DEEPSEEK_API_KEY=your-deepseek-key
+AGENT_MODE=llm
+LLM_PROVIDER=deepseek
+DEEPSEEK_API_KEY=your-deepseek-api-key
 DEEPSEEK_MODEL=deepseek-chat
 ```
+
+3. Start the server:
+```bash
+pnpm run dev
+```
+
+That's it! No LiteLLM proxy needed. The server connects directly to DeepSeek's API.
+
+**Configuration Options:**
+```env
+AGENT_MODE=llm              # Required: use 'llm' mode
+LLM_PROVIDER=deepseek       # Required: set to 'deepseek'
+DEEPSEEK_API_KEY=your-key   # Required: your DeepSeek API key
+DEEPSEEK_MODEL=deepseek-chat # Optional: model name (default: deepseek-chat)
+```
+
+**When to Use DeepSeek Direct vs LiteLLM:**
+- **Use DeepSeek Direct**: Simple setup, only need DeepSeek, no additional services
+- **Use LiteLLM**: Want to switch between multiple providers, need provider abstraction, or want advanced features like fallback, rate limiting, etc.
 
 ## MCP Integration
 

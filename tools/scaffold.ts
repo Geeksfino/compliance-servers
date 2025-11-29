@@ -3,8 +3,8 @@
  * Scaffold CLI for AG-UI and MCP-UI Servers
  * 
  * Usage:
- *   npx @geeksfino/agui-mcpui-servers scaffold my-project
- *   npx @geeksfino/agui-mcpui-servers scaffold my-project --description "My agent"
+ *   npx @finogeek/agui-mcpui-servers my-project
+ *   npx @finogeek/agui-mcpui-servers my-project --description "My agent"
  * 
  * Or with pnpm:
  *   pnpm scaffold my-project
@@ -357,7 +357,7 @@ async function parseArgs(): Promise<ScaffoldOptions> {
 ${colors.bright}Scaffold CLI for AG-UI and MCP-UI Servers${colors.reset}
 
 ${colors.bright}Usage:${colors.reset}
-  scaffold <project-name> [options]
+  npx @finogeek/agui-mcpui-servers <project-name> [options]
   
   # Creates a combined project with both AG-UI and MCP-UI servers
 
@@ -370,9 +370,9 @@ ${colors.bright}Options:${colors.reset}
   --help, -h       Show this help message
 
 ${colors.bright}Examples:${colors.reset}
-  scaffold my-agent
-  scaffold my-project --description "My AI agent" --install
-  scaffold cool-bot --output ./servers/cool-bot --author "Your Name"
+  npx @finogeek/agui-mcpui-servers my-agent
+  npx @finogeek/agui-mcpui-servers my-project --description "My AI agent" --install
+  npx @finogeek/agui-mcpui-servers cool-bot --output ./servers/cool-bot --author "Your Name"
   
 ${colors.bright}Note:${colors.reset}
   The scaffolded project includes both AG-UI server (LLM agent) and MCP-UI server (UI tools)

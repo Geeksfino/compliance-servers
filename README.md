@@ -1,26 +1,18 @@
 # Compliance Servers - AG-UI and MCP-UI Templates
 
+[English](./README.md) | [中文](./README.zh.md) | [中文 (GitHub)](https://github.com/finclip/compliance-servers/blob/main/README.zh.md)
+
 This repository contains production-ready templates and scaffolding tools for creating AG-UI and MCP-UI servers.
 
 ## Quick Start
 
 ### Create a New Project
 
-**If using GitHub Packages** (default), configure npm first:
-
-```bash
-# Add to ~/.npmrc (or create it)
-echo "@geeksfino:registry=https://npm.pkg.github.com" >> ~/.npmrc
-echo "//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN" >> ~/.npmrc
-```
-
-Get your GitHub token from: Settings → Developer settings → Personal access tokens
-
-**Then scaffold your project:**
+**Scaffold your project:**
 
 ```bash
 # Combined project with both AG-UI and MCP-UI servers
-npx @geeksfino/agui-mcpui-servers scaffold my-project
+npx @finogeek/agui-mcpui-servers my-project
 ```
 
 Then:
@@ -98,13 +90,13 @@ A CLI tool for creating new projects from templates with:
 No installation required:
 
 ```bash
-npx @geeksfino/agui-mcpui-servers scaffold <project-name>
+npx @finogeek/agui-mcpui-servers <project-name>
 ```
 
 ### Global Installation
 
 ```bash
-npm install -g @geeksfino/agui-mcpui-servers
+npm install -g @finogeek/agui-mcpui-servers
 scaffold my-project
 ```
 
@@ -140,26 +132,33 @@ scaffold <project-name> [options]
 
 ```bash
 # Basic combined project
-npx @geeksfino/agui-mcpui-servers scaffold coding-assistant
+npx @finogeek/agui-mcpui-servers coding-assistant
 
 # With options
-npx @geeksfino/agui-mcpui-servers scaffold my-agent \
+npx @finogeek/agui-mcpui-servers my-agent \
   --description "My AI agent with custom tools" \
   --author "Your Name" \
   --install
 
 # Custom output directory
-npx @geeksfino/agui-mcpui-servers scaffold financial-bot \
+npx @finogeek/agui-mcpui-servers financial-bot \
   --output ./agents/financial \
   --install
 ```
 
 ## Documentation
 
+### English
 - **[docs/scaffold-guide.md](./docs/scaffold-guide.md)** - Comprehensive scaffold tool guide
+- **[docs/litellm-guide.md](./docs/litellm-guide.md)** - LiteLLM integration guide (recommended for LLM setup)
 - **[docs/testing-guide.md](./docs/testing-guide.md)** - Testing strategies
 - **[docs/cloud-deployment-guide.md](./docs/cloud-deployment-guide.md)** - Deployment instructions
 - **[docs/mcp-logging-guide.md](./docs/mcp-logging-guide.md)** - MCP logging reference
+
+### 中文 (Chinese)
+- **[docs/litellm-guide.zh.md](./docs/litellm-guide.zh.md)** - LiteLLM 集成指南
+
+### Templates
 - **[templates/agui-server/CUSTOMIZATION.md](./templates/agui-server/CUSTOMIZATION.md)** - AG-UI customization guide
 - **[templates/mcpui-server/CUSTOMIZATION.md](./templates/mcpui-server/CUSTOMIZATION.md)** - MCP-UI customization guide
 
@@ -214,11 +213,19 @@ CORS_ORIGIN=*
 # Agent Mode
 AGENT_MODE=llm  # or 'emulated'
 
-# LLM Provider
-LLM_PROVIDER=litellm  # or 'deepseek'
-LITELLM_ENDPOINT=http://localhost:4000
-LITELLM_API_KEY=your-key
-LITELLM_MODEL=deepseek-chat
+# LLM Provider - Choose ONE of the following options:
+
+# Option 1: Use DeepSeek directly (simplest, no additional services)
+LLM_PROVIDER=deepseek
+DEEPSEEK_API_KEY=your-deepseek-api-key
+DEEPSEEK_MODEL=deepseek-chat
+
+# Option 2: Use LiteLLM (recommended for multiple providers)
+# See docs/litellm-guide.md for detailed LiteLLM setup instructions
+# LLM_PROVIDER=litellm
+# LITELLM_ENDPOINT=http://localhost:4000/v1
+# LITELLM_API_KEY=your-key
+# LITELLM_MODEL=deepseek-chat
 
 # MCP Connection
 MCP_SERVER_URL=http://localhost:3100/mcp

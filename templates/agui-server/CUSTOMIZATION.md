@@ -115,11 +115,13 @@ All configuration is in `src/utils/config.ts`. Environment variables:
 | `CORS_ORIGIN` | CORS origin | `*` |
 | `AGENT_MODE` | Agent mode (`llm` or `emulated`) | `emulated` |
 | `LLM_PROVIDER` | LLM provider (`litellm` or `deepseek`) | `litellm` |
-| `LITELLM_ENDPOINT` | LiteLLM endpoint | - |
-| `LITELLM_API_KEY` | LiteLLM API key | - |
+| `LITELLM_ENDPOINT` | LiteLLM endpoint (required if `LLM_PROVIDER=litellm`) | - |
+| `LITELLM_API_KEY` | LiteLLM API key (required if `LLM_PROVIDER=litellm`) | - |
 | `LITELLM_MODEL` | LiteLLM model name | `deepseek-chat` |
-| `DEEPSEEK_API_KEY` | DeepSeek API key | - |
+| `DEEPSEEK_API_KEY` | DeepSeek API key (required if `LLM_PROVIDER=deepseek`) | - |
 | `DEEPSEEK_MODEL` | DeepSeek model name | `deepseek-chat` |
+
+**Note:** When using `LLM_PROVIDER=deepseek`, you do NOT need LiteLLM. The server connects directly to DeepSeek's API. See the [AG-UI server README](./README.md#deepseek-agent) for details.
 | `MCP_SERVER_URL` | MCP server HTTP URL | - |
 | `MCP_SERVER_COMMAND` | MCP server stdio command | - |
 | `AGUI_SYSTEM_PROMPT` | System prompt override | - |
