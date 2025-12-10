@@ -39,6 +39,16 @@ pnpm install
 
 **注意**：这些是用于开发的测试服务器。对于新项目，请使用脚手架工具，它会创建一个包含两个服务器的组合项目。
 
+### 自定义 LLM Server 示例
+
+`templates/llm-custom-server/` 目录包含一个自定义 LLM 服务器示例，演示如何为自定义 LLM API 创建 OpenAI 兼容的代理服务。当您需要将自定义 LLM 提供商与 AG-UI 或其他 OpenAI 兼容的客户端集成时，这非常有用。
+
+**功能特性：**
+- OpenAI 兼容的 `/v1/chat/completions` 端点
+- SSE 流式传输支持
+- 支持 Docker 部署
+- 详细用法请参见 `templates/README.md`
+
 ### 脚手架工具
 
 用于从模板创建新项目的 CLI 工具，具有：
@@ -161,6 +171,7 @@ npx @finogeek/agui-mcpui-servers financial-bot \
 ### 模板
 - **[templates/agui-server/CUSTOMIZATION.md](./templates/agui-server/CUSTOMIZATION.md)** - AG-UI 自定义指南
 - **[templates/mcpui-server/CUSTOMIZATION.md](./templates/mcpui-server/CUSTOMIZATION.md)** - MCP-UI 自定义指南
+- **[templates/README.md](./templates/README.md)** - 模板 README（包含自定义 LLM Server 示例）
 
 ## 模板结构
 

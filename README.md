@@ -41,6 +41,16 @@ The `templates/` directory contains a combined project template with both AG-UI 
 
 **Note**: These are test servers for development. For new projects, use the scaffold tool which creates a combined project with both servers.
 
+### Custom LLM Server Example
+
+The `templates/llm-custom-server/` directory contains a custom LLM server example that demonstrates how to create an OpenAI-compatible proxy service for custom LLM APIs. This is useful when you need to integrate custom LLM providers with AG-UI or other OpenAI-compatible clients.
+
+**Features:**
+- OpenAI-compatible `/v1/chat/completions` endpoint
+- SSE streaming support
+- Docker deployment ready
+- See `templates/README.md` for detailed usage
+
 ### Scaffold Tool
 
 A CLI tool for creating new projects from templates with:
@@ -163,6 +173,7 @@ npx @finogeek/agui-mcpui-servers financial-bot \
 ### Templates
 - **[templates/agui-server/CUSTOMIZATION.md](./templates/agui-server/CUSTOMIZATION.md)** - AG-UI customization guide
 - **[templates/mcpui-server/CUSTOMIZATION.md](./templates/mcpui-server/CUSTOMIZATION.md)** - MCP-UI customization guide
+- **[templates/README.md](./templates/README.md)** - Template README (includes Custom LLM Server example)
 
 ## Template Structure
 
