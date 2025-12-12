@@ -123,6 +123,7 @@ When published, the package contains:
 ├── templates/
 │   ├── agui-server/         # AG-UI server template
 │   ├── mcpui-server/        # MCP-UI server template
+│   ├── llm-custom-server/   # Custom LLM server example
 │   ├── package.json         # Root package.json template
 │   ├── start.sh             # Startup script template
 │   ├── README.md            # Template README

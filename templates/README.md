@@ -237,11 +237,137 @@ pnpm clean
 pnpm install
 ```
 
+## Custom LLM Server Example
+
+This project provides a custom LLM Server example located in the `llm-custom-server/` directory. This is a lightweight API proxy service that converts custom APIs to OpenAI-compatible format, allowing AG-UI or other clients supporting the OpenAI protocol to seamlessly call it.
+
+### Features
+
+*   **OpenAI Compatible Interface**: Provides `/v1/chat/completions` endpoint.
+*   **Streaming Response**: Supports Server-Sent Events (SSE) streaming output, adapted for custom API-specific status streams.
+*   **Authentication Management**: Prioritizes environment variable `FINSTEP_API_KEY`, also supports passing Key from client request headers.
+*   **Docker Deployment**: Provides one-click Docker deployment solution.
+
+### Quick Start
+
+#### 1. Prepare Files
+
+Ensure the `llm-custom-server/` directory contains the following files:
+*   `custom_finstep.py` (main program script)
+*   `Dockerfile` (build file)
+
+#### 2. Build Docker Image
+
+Run in the `llm-custom-server/` directory:
+
+```bash
+cd llm-custom-server
+docker build -t finstep-proxy .
+```
+
+#### 3. Start Service
+
+Run the container and map port `4001` to the host. Make sure to replace `<YOUR_API_KEY>` with your actual API Key.
+
+```bash
+docker run -d \
+  --name finstep-proxy \
+  -p 4001:4001 \
+  -e FINSTEP_API_KEY='AI-ONE-xxxxxxxxxxxxxxxxxxxx' \
+  --restart always \
+  finstep-proxy
+```
+
+#### 4. Verify Service
+
+Test if the service is running properly using curl:
+
+```bash
+curl http://localhost:4001/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "finstep-proxy",
+    "messages": [{"role": "user", "content": "Hello"}],
+    "stream": true
+  }'
+```
+
+#### 5. Client Configuration (AG-UI)
+
+Configure in the AG-UI Server's `.env` file:
+
+```env
+# Connect to locally running Docker container
+LITELLM_ENDPOINT=http://localhost:4001/v1
+
+# Model name (can be any value, proxy service ignores this parameter, but it's recommended to fill it)
+LITELLM_MODEL=finstep-proxy
+
+# API Key (if environment variable is configured when starting Docker, any value can be filled here)
+LITELLM_API_KEY=any
+```
+
+### API Specification (Internal Protocol)
+
+This proxy service encapsulates the details of the upstream API. The following is the protocol specification of the upstream interface, for reference only.
+
+#### Request Format
+
+*   **URL**: `https://product-backend.finstep.cn/chat/api/chat/v2/completion`
+*   **Method**: `POST`
+*   **Header**:
+    *   `Content-Type`: `application/json`
+    *   `Authorization`: `AI-ONE-xxxxxxxxxxxxxxxxxxxx` (API Key)
+*   **Body**:
+
+```json
+{
+  "userId": "12345679",
+  "sessionId": "7742d2c9127a4fc7b106a2ed6f790893",
+  "query": "Will WuXi AppTec stock rise recently?",
+  "sessionTitle": "Will WuXi AppTec stock rise recently?"
+}
+```
+
+#### Response Format (SSE Streaming)
+
+The upstream interface returns a standard Server-Sent Events (SSE) data stream containing different status phases:
+
+```text
+data:{"status": "THINKING"}
+data:{"status": "ORGANIZING"}
+data:{"status": "MSG_START"}
+data:{"status": "RESPONSING", "type": "deepthink", "text": "You"}
+data:{"status": "RESPONSING", "type": "deepthink", "text": "are"}
+data:{"status": "MSG_DONE"}
+data:{"status": "DONE"}
+```
+
+The proxy service automatically processes these statuses, extracts only the `text` field from the `RESPONSING` status, and encapsulates it into OpenAI standard `chat.completion.chunk` format to return to the client.
+
+### Development and Debugging
+
+To view logs for debugging:
+
+```bash
+docker logs -f finstep-proxy
+```
+
+Stop and remove the container:
+
+```bash
+docker stop finstep-proxy
+docker rm finstep-proxy
+```
+
+For more details, see **[llm-custom-server/README.md](./llm-custom-server/README.md)**.
+
 ## Documentation
 
 - **AG-UI Server**: See `agui-server/CUSTOMIZATION.md`
 - **MCP-UI Server**: See `mcpui-server/CUSTOMIZATION.md`
 - **Scaffold Guide**: See `../docs/scaffold-guide.md`
+- **Custom LLM Server**: See `llm-custom-server/README.md`
 
 ## License
 
