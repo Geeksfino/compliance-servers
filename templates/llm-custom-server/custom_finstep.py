@@ -69,7 +69,8 @@ def get_finstep_stream(messages, api_key):
                     
                     status = data.get("status")
                     
-                    if status == "RESPONSING" and "text" in data:
+                    # Only process RESPONSING with type="text", ignore "deepthink" (thinking process)
+                    if status == "RESPONSING" and data.get("type") == "text" and "text" in data:
                         text = data["text"]
                         
                         chunk = {
@@ -182,5 +183,5 @@ async def chat_completions(request: ChatCompletionRequest, req: Request):
         }
 
 if __name__ == "__main__":
-    print("Starting Standalone Finstep Proxy on port 5000...")
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    print("Starting Standalone Finstep Proxy on port 4001...")
+    uvicorn.run(app, host="0.0.0.0", port=4001)

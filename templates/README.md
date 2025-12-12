@@ -267,12 +267,12 @@ docker build -t finstep-proxy .
 
 #### 3. Start Service
 
-Run the container and map port `5000` to the host. Make sure to replace `<YOUR_API_KEY>` with your actual API Key.
+Run the container and map port `4001` to the host. Make sure to replace `<YOUR_API_KEY>` with your actual API Key.
 
 ```bash
 docker run -d \
   --name finstep-proxy \
-  -p 5000:5000 \
+  -p 4001:4001 \
   -e FINSTEP_API_KEY='AI-ONE-xxxxxxxxxxxxxxxxxxxx' \
   --restart always \
   finstep-proxy
@@ -283,7 +283,7 @@ docker run -d \
 Test if the service is running properly using curl:
 
 ```bash
-curl http://localhost:5000/v1/chat/completions \
+curl http://localhost:4001/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "finstep-proxy",
@@ -298,7 +298,7 @@ Configure in the AG-UI Server's `.env` file:
 
 ```env
 # Connect to locally running Docker container
-LITELLM_ENDPOINT=http://localhost:5000/v1
+LITELLM_ENDPOINT=http://localhost:4001/v1
 
 # Model name (can be any value, proxy service ignores this parameter, but it's recommended to fill it)
 LITELLM_MODEL=finstep-proxy

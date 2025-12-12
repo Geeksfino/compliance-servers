@@ -27,12 +27,12 @@ docker build -t finstep-proxy .
 
 ### 3. 启动服务
 
-运行容器，并将 `5000` 端口映射到主机。请务必替换 `<YOUR_API_KEY>` 为真实的 Finstep API Key。
+运行容器，并将 `4001` 端口映射到主机。请务必替换 `<YOUR_API_KEY>` 为真实的 Finstep API Key。
 
 ```bash
 docker run -d \
   --name finstep-proxy \
-  -p 5000:5000 \
+  -p 4001:4001 \
   -e FINSTEP_API_KEY='AI-ONE-xxxxxxxxxxxxxxxxxxxx' \
   --restart always \
   finstep-proxy
@@ -43,7 +43,7 @@ docker run -d \
 使用 curl 测试服务是否正常运行：
 
 ```bash
-curl http://localhost:5000/v1/chat/completions \
+curl http://localhost:4001/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "finstep-proxy",
@@ -58,7 +58,7 @@ curl http://localhost:5000/v1/chat/completions \
 
 ```env
 # 连接到本地运行的 Docker 容器
-LITELLM_ENDPOINT=http://localhost:5000/v1
+LITELLM_ENDPOINT=http://localhost:4001/v1
 
 # 模型名称 (可以是任意值，代理服务会忽略此参数，但建议填写)
 LITELLM_MODEL=finstep-proxy

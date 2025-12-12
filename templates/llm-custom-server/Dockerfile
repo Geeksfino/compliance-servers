@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir fastapi uvicorn requests
 COPY custom_finstep.py .
 
 # 暴露服务端口
-EXPOSE 5000
+EXPOSE 4001
 
 # 启动命令
 # 监听所有网络接口 (0.0.0.0) 以允许外部访问
